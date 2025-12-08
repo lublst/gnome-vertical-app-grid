@@ -1,0 +1,10 @@
+{
+  "description": "A GNOME Shell Extension",
+  "name": "Vertical App Grid",
+  "shell-version": [
+    "49"
+  ],
+  "url": "https://github.com/lublst/gnome-vertical-app-grid",
+  "uuid": "vertical-app-grid@lublst.github.io",
+  "version": 1
+}
