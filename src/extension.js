@@ -1,0 +1,67 @@
+import Clutter from 'gi://Clutter';
+
+import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+import * as OverviewControls from 'resource:///org/gnome/shell/ui/overviewControls.js';
+
+import { Extension } from 'resource:///org/gnome/shell/extensions/extension.js';
+import { InjectionManager } from 'resource:///org/gnome/shell/extensions/extension.js';
+
+import { VerticalAppDisplay } from './appDisplay.js';
+
+export default class VerticalAppGridExtension extends Extension {
+  enable() {
+    const overviewControlsProto = OverviewControls.ControlsManager.prototype;
+    const mod = this;
+
+    this._vertAppDisplay = new VerticalAppDisplay();
+    this._injectionManager = new InjectionManager();
+
+    // Add the vertical app display to the overview
+    this._overviewControls = Main.overview._overview._controls;
+    this._layoutManager = this._overviewControls.layout_manager;
+
+    this._overviewControls.add_child(this._vertAppDisplay);
+
+    // Steal the layout of the original app display
+    this._layoutManager._appDisplay = this._vertAppDisplay;
+
+    this._injectionManager.overrideMethod(overviewControlsProto, '_updateAppDisplayVisibility', () => function (params = null) {
+      if (!params) {
+        params = this._stateAdjustment.getStateTransitionParams();
+      }
+
+      const { initialState, finalState } = params;
+      const state = Math.max(initialState, finalState);
+
+      mod._vertAppDisplay.visible =
+        state > OverviewControls.ControlsState.WINDOW_PICKER &&
+        !this._searchController.searchActive;
+    });
+
+    // Fade out the app display when the search becomes active
+    this._injectionManager.overrideMethod(overviewControlsProto, '_onSearchChanged', originalFn => function () {
+      originalFn.call(this);
+
+      const { searchActive } = this._searchController;
+
+      mod._vertAppDisplay.ease({
+        opacity: searchActive ? 0 : 255,
+        duration: OverviewControls.SIDE_CONTROLS_ANIMATION_TIME,
+        mode: Clutter.AnimationMode.EASE_OUT_QUAD
+      });
+    });
+  }
+
+  disable() {
+    this._layoutManager._appDisplay = this._overviewControls._appDisplay;
+
+    this._injectionManager.clear();
+    this._overviewControls.remove_child(this._vertAppDisplay);
+    this._vertAppDisplay.destroy();
+
+    this._vertAppDisplay = null;
+    this._injectionManager = null;
+    this._overviewControls = null;
+    this._layoutManager = null;
+  }
+}
