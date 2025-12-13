@@ -25,7 +25,8 @@ class VerticalAppDisplay extends St.Widget {
 
     this._gridBox = new St.BoxLayout({
       orientation: Clutter.Orientation.VERTICAL,
-      x_align: Clutter.ActorAlign.CENTER
+      x_align: Clutter.ActorAlign.CENTER,
+      y_align: Clutter.ActorAlign.CENTER
     });
     this._scrollView.set_child(this._gridBox);
 
@@ -59,7 +60,7 @@ class VerticalAppDisplay extends St.Widget {
     // Filter out broken desktop files and hidden apps
     const apps = installedApps.filter(appInfo => {
       try {
-        return !!appInfo.get_id() && !appInfo.get_nodisplay();
+        return !!appInfo.get_id() && appInfo.should_show();
       } catch {
         return false;
       }
@@ -71,9 +72,11 @@ class VerticalAppDisplay extends St.Widget {
     return apps.map(appInfo => appInfo.get_id());
   }
 
-  vfunc_destroy() {
-    for (const appIcon of this._apps) {
+  destroy() {
+    for (const appIcon of this._appIcons) {
       appIcon.destroy();
     }
+
+    super.destroy();
   }
 });
