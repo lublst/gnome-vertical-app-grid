@@ -10,20 +10,20 @@ import { VerticalAppDisplay } from './appDisplay.js';
 
 export default class VerticalAppGridExtension extends Extension {
   enable() {
+    const extension = this;
     const overviewControlsProto = OverviewControls.ControlsManager.prototype;
-    const mod = this;
 
     this._vertAppDisplay = new VerticalAppDisplay();
     this._injectionManager = new InjectionManager();
 
     // Add the vertical app display to the overview
     this._overviewControls = Main.overview._overview._controls;
-    this._layoutManager = this._overviewControls.layout_manager;
+    this._overviewLayoutManager = this._overviewControls.layout_manager;
 
     this._overviewControls.add_child(this._vertAppDisplay);
 
     // Steal the layout of the original app display
-    this._layoutManager._appDisplay = this._vertAppDisplay;
+    this._overviewLayoutManager._appDisplay = this._vertAppDisplay;
 
     this._injectionManager.overrideMethod(overviewControlsProto, '_updateAppDisplayVisibility', () => function (params = null) {
       if (!params) {
@@ -33,7 +33,7 @@ export default class VerticalAppGridExtension extends Extension {
       const { initialState, finalState } = params;
       const state = Math.max(initialState, finalState);
 
-      mod._vertAppDisplay.visible =
+      extension._vertAppDisplay.visible =
         state > OverviewControls.ControlsState.WINDOW_PICKER &&
         !this._searchController.searchActive;
     });
@@ -44,7 +44,7 @@ export default class VerticalAppGridExtension extends Extension {
 
       const { searchActive } = this._searchController;
 
-      mod._vertAppDisplay.ease({
+      extension._vertAppDisplay.ease({
         opacity: searchActive ? 0 : 255,
         duration: OverviewControls.SIDE_CONTROLS_ANIMATION_TIME,
         mode: Clutter.AnimationMode.EASE_OUT_QUAD
@@ -53,15 +53,15 @@ export default class VerticalAppGridExtension extends Extension {
   }
 
   disable() {
-    this._layoutManager._appDisplay = this._overviewControls._appDisplay;
+    this._overviewLayoutManager._appDisplay = this._overviewControls._appDisplay;
 
-    this._injectionManager.clear();
     this._overviewControls.remove_child(this._vertAppDisplay);
+    this._injectionManager.clear();
     this._vertAppDisplay.destroy();
 
     this._vertAppDisplay = null;
     this._injectionManager = null;
     this._overviewControls = null;
-    this._layoutManager = null;
+    this._overviewLayoutManager = null;
   }
 }

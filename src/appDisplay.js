@@ -11,25 +11,31 @@ export const VerticalAppDisplay = GObject.registerClass(
 class VerticalAppDisplay extends St.Widget {
   _init() {
     super._init({
-      layout_manager: new Clutter.BoxLayout(),
-      reactive: true
+      layout_manager: new Clutter.BinLayout(),
+      x_expand: true,
+      y_expand: true
     });
 
     this._scrollView = new St.ScrollView({
       hscrollbar_policy: St.PolicyType.NEVER,
-      vscrollbar_policy: St.PolicyType.NEVER,
-      x_expand: true,
-      y_expand: true
+      vscrollbar_policy: St.PolicyType.NEVER
     });
+
     this.add_child(this._scrollView);
+
+    const fadeEffect = new St.ScrollViewFade({
+      extend_fade_area: true
+    });
+
+    this._scrollView.add_effect(fadeEffect);
 
     this._gridBox = new St.BoxLayout({
       orientation: Clutter.Orientation.VERTICAL,
       x_align: Clutter.ActorAlign.CENTER,
       y_align: Clutter.ActorAlign.CENTER
     });
-    this._scrollView.set_child(this._gridBox);
 
+    this._scrollView.set_child(this._gridBox);
     this._addAppIcons();
   }
 
