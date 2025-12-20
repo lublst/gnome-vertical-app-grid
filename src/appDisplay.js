@@ -3,7 +3,9 @@ import GObject from 'gi://GObject';
 import Shell from 'gi://Shell';
 import St from 'gi://St';
 
+import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as AppDisplay from 'resource:///org/gnome/shell/ui/appDisplay.js';
+import * as ParentalControlsManager from 'resource:///org/gnome/shell/misc/parentalControlsManager.js';
 
 const COLUMNS = 8;
 
@@ -36,6 +38,24 @@ class VerticalAppDisplay extends St.Widget {
     });
 
     this._scrollView.set_child(this._gridBox);
+
+    // Reset scroll when the overview is hidden
+    Main.overview.connectObject('hidden', () => {
+      this._scrollView.vadjustment.set_value(0);
+    }, this);
+
+    // Redisplay the app grid when an app was installed or removed
+    Shell.AppSystem.get_default().connectObject('installed-changed', () => {
+      this._redisplay();
+    }, this);
+
+    // Redisplay when parental controls change
+    this._parentalControls = ParentalControlsManager.getDefault();
+
+    this._parentalControls.connectObject('app-filter-changed', () => {
+      this._redisplay();
+    }, this);
+
     this._addAppIcons();
   }
 
@@ -57,6 +77,8 @@ class VerticalAppDisplay extends St.Widget {
         rowBox.add_child(this._appIcons[j]);
       }
     }
+
+    this._gridBox.queue_relayout();
   }
 
   _loadApps() {
@@ -66,7 +88,7 @@ class VerticalAppDisplay extends St.Widget {
     // Filter out broken desktop files and hidden apps
     const apps = installedApps.filter(appInfo => {
       try {
-        return !!appInfo.get_id() && appInfo.should_show();
+        return !!appInfo.get_id() && this._parentalControls.shouldShowApp(appInfo);
       } catch {
         return false;
       }
@@ -76,6 +98,11 @@ class VerticalAppDisplay extends St.Widget {
     apps.sort((a, b) => a.get_name().toLowerCase().localeCompare(b.get_name().toLowerCase()));
 
     return apps.map(appInfo => appInfo.get_id());
+  }
+
+  _redisplay() {
+    this._gridBox.destroy_all_children();
+    this._addAppIcons();
   }
 
   destroy() {
