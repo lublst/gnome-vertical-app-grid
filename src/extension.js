@@ -13,7 +13,8 @@ export default class VerticalAppGridExtension extends Extension {
     const extension = this;
     const overviewControlsProto = OverviewControls.ControlsManager.prototype;
 
-    this._vertAppDisplay = new VerticalAppDisplay();
+    this._settings = this.getSettings();
+    this._vertAppDisplay = new VerticalAppDisplay(this._settings);
     this._injectionManager = new InjectionManager();
 
     // Add the vertical app display to the overview
@@ -59,6 +60,7 @@ export default class VerticalAppGridExtension extends Extension {
     this._injectionManager.clear();
     this._vertAppDisplay.destroy();
 
+    this._settings = null;
     this._vertAppDisplay = null;
     this._injectionManager = null;
     this._overviewControls = null;

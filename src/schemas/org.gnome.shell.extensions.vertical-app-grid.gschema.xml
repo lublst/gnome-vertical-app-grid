@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <schema id="org.gnome.shell.extensions.vertical-app-grid" path="/org/gnome/shell/extensions/vertical-app-grid/">
+
+    <key name="columns" type="i">
+      <default>6</default>
+    </key>
+
+    <key name="icon-size" type="i">
+      <default>64</default>
+    </key>
+
+    <key name="icon-spacing" type="i">
+      <default>24</default>
+    </key>
+
+  </schema>
+</schemalist>
