@@ -38,7 +38,6 @@ class VerticalAppDisplay extends St.Widget {
 
     this._gridView = new St.Viewport({
       layout_manager: this._gridLayout,
-      x_expand: true,
       y_expand: true
     });
 
@@ -85,7 +84,6 @@ class VerticalAppDisplay extends St.Widget {
     const iconSize = this._settings.get_int('icon-size');
     const appSys = Shell.AppSystem.get_default();
     const appIds = this._loadApps();
-
 
     this._appIcons = appIds.map(appId => {
       const appIcon = new AppDisplay.AppIcon(appSys.lookup_app(appId), {
