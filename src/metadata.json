@@ -3,7 +3,7 @@
   "name": "Vertical App Grid",
   "settings-schema": "org.gnome.shell.extensions.vertical-app-grid",
   "shell-version": [
-    "49"
+    "48","49"
   ],
   "url": "https://github.com/lublst/gnome-vertical-app-grid",
   "uuid": "vertical-app-grid@lublst.github.io",
