@@ -90,11 +90,6 @@ class VerticalAppDisplay extends St.Widget {
         isDraggable: false
       });
 
-      // Hide running indicator
-      appIcon._updateRunningStyle = function () {
-        this._dot.hide();
-      }
-
       appIcon.icon.setIconSize(iconSize);
 
       return appIcon;

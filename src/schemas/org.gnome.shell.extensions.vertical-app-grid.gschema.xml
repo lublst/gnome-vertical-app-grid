@@ -6,6 +6,10 @@
       <default>6</default>
     </key>
 
+    <key name="favorites-section" type="b">
+      <default>true</default>
+    </key>
+
     <key name="icon-size" type="i">
       <default>64</default>
     </key>

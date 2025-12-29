@@ -1,11 +1,12 @@
 {
-  "description": "Turns the default horizontal app grid into a vertical one. App icon size and spacing can be customized in the extension preferences. The implementation is very basic, so drag-and-drop reordering and app folders are currently not supported.",
+  "description": "Turns the default horizontal app grid into a vertical one",
   "name": "Vertical App Grid",
   "settings-schema": "org.gnome.shell.extensions.vertical-app-grid",
   "shell-version": [
-    "48","49"
+    "48",
+    "49"
   ],
   "url": "https://github.com/lublst/gnome-vertical-app-grid",
   "uuid": "vertical-app-grid@lublst.github.io",
-  "version": 1
+  "version": 2
 }
