@@ -5,6 +5,7 @@ import St from 'gi://St';
 
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as AppDisplay from 'resource:///org/gnome/shell/ui/appDisplay.js';
+import * as AppFavorites from 'resource:///org/gnome/shell/ui/appFavorites.js';
 import * as ParentalControlsManager from 'resource:///org/gnome/shell/misc/parentalControlsManager.js';
 
 export const VerticalAppDisplay = GObject.registerClass(
@@ -13,60 +14,117 @@ class VerticalAppDisplay extends St.Widget {
     this._settings = settings;
 
     super._init({
-      layout_manager: new Clutter.BinLayout(),
-      x_expand: true,
-      y_expand: true
+      layout_manager: new Clutter.BinLayout()
     });
 
     this._scrollView = new St.ScrollView({
       hscrollbar_policy: St.PolicyType.NEVER,
-      vscrollbar_policy: St.PolicyType.NEVER
+      vscrollbar_policy: St.PolicyType.NEVER,
+      x_expand: true,
+      y_expand: true
     });
 
     this.add_child(this._scrollView);
 
+    // Fade out the edges of the scroll view
     const fadeEffect = new St.ScrollViewFade({
       extend_fade_area: true
     });
 
     this._scrollView.add_effect(fadeEffect);
 
-    this._gridLayout = new VerticalAppDisplayLayout(
+    const scrollBox = new St.BoxLayout({
+      x_align: Clutter.ActorAlign.CENTER,
+      y_align: Clutter.ActorAlign.CENTER,
+      x_expand: false,
+      y_expand: false,
+      vertical: true
+    });
+
+    this._scrollView.set_child(scrollBox);
+
+    // Favorites section
+    this._favoritesLabel = new St.Label({
+      style_class: 'search-statustext',
+      text: 'Favorites'
+    });
+
+    this._favoritesLayout = new VerticalAppDisplayLayout(
       this._settings.get_int('columns'),
       this._settings.get_int('icon-spacing')
     );
 
-    this._gridView = new St.Viewport({
-      layout_manager: this._gridLayout,
-      y_expand: true
+    this._favoritesView = new St.Viewport({
+      layout_manager: this._favoritesLayout
     });
 
-    this._scrollView.set_child(this._gridView);
+    // Main section
+    this._mainLabel = new St.Label({
+      style_class: 'search-statustext',
+      text: 'All Apps'
+    });
+
+    this._mainLayout = new VerticalAppDisplayLayout(
+      this._settings.get_int('columns'),
+      this._settings.get_int('icon-spacing')
+    );
+
+    this._mainView = new St.Viewport({
+      layout_manager: this._mainLayout
+    });
+
+    scrollBox.add_child(this._favoritesLabel);
+    scrollBox.add_child(this._favoritesView);
+    scrollBox.add_child(this._mainLabel);
+    scrollBox.add_child(this._mainView);
+
+    this._appSystem = Shell.AppSystem.get_default();
+    this._appFavorites = AppFavorites.getAppFavorites();
+    this._parentalControls = ParentalControlsManager.getDefault();
+
+    this._connectSignals();
+    this._addAppIcons();
+  }
+
+  _connectSignals() {
+    // Redisplay when the favorites section is toggled
+    this._settings.connectObject('changed::favorites-section', () => {
+      this._redisplay();
+    }, this);
+
+    // Redisplay the app grid when an app was installed or removed
+    this._appSystem.connectObject('installed-changed', () => {
+      this._redisplay();
+    }, this);
+
+    // Redisplay when favorites change
+    this._appFavorites.connectObject('changed', () => {
+      this._redisplay();
+    }, this);
+
+    // Redisplay when parental controls change
+    this._parentalControls.connectObject('app-filter-changed', () => {
+      this._redisplay();
+    }, this);
 
     // Reset scroll when the overview is hidden
     Main.overview.connectObject('hidden', () => {
       this._scrollView.vadjustment.set_value(0);
     }, this);
 
-    // Redisplay the app grid when an app was installed or removed
-    Shell.AppSystem.get_default().connectObject('installed-changed', () => {
-      this._redisplay();
-    }, this);
-
-    // Redisplay when parental controls change
-    this._parentalControls = ParentalControlsManager.getDefault();
-
-    this._parentalControls.connectObject('app-filter-changed', () => {
-      this._redisplay();
-    }, this);
-
     // Update layout when settings change
     this._settings.connectObject('changed::columns', () => {
-      this._gridLayout.columns = this._settings.get_int('columns');
+      const columns = this._settings.get_int('columns');
+
+      this._favoritesLayout.columns = columns;
+      this._mainLayout.columns = columns;
     }, this);
 
     this._settings.connectObject('changed::icon-spacing', () => {
-      this._gridLayout.spacing = this._settings.get_int('icon-spacing');
+      const spacing = this._settings.get_int('icon-spacing');
+
+      this._favoritesLayout.spacing = spacing;
+      this._mainLayout.spacing = spacing;
     }, this);
 
     this._settings.connectObject('changed::icon-size', () => {
@@ -76,33 +134,38 @@ class VerticalAppDisplay extends St.Widget {
         appIcon.icon.setIconSize(size);
       });
     }, this);
-
-    this._addAppIcons();
   }
 
   _addAppIcons() {
     const iconSize = this._settings.get_int('icon-size');
-    const appSys = Shell.AppSystem.get_default();
-    const appIds = this._loadApps();
+    const favSection = this._settings.get_boolean('favorites-section');
 
-    this._appIcons = appIds.map(appId => {
-      const appIcon = new AppDisplay.AppIcon(appSys.lookup_app(appId), {
-        isDraggable: false
-      });
+    this._appIcons = this._loadApps()
+      .map(id => this._appSystem.lookup_app(id))
+      .map(app => new AppDisplay.AppIcon(app, { isDraggable: false }));
 
+    this._appIcons.forEach(appIcon => {
       appIcon.icon.setIconSize(iconSize);
 
-      return appIcon;
+      if (favSection && this._appFavorites.isFavorite(appIcon._id)) {
+        this._favoritesView.add_child(appIcon);
+      } else {
+        this._mainView.add_child(appIcon);
+      }
     });
 
-    this._appIcons.forEach(icon => {
-      this._gridView.add_child(icon);
-    });
+    const showFavSection = this._favoritesView.get_children().length > 0;
+    const showMainSection = this._mainView.get_children().length > 0;
+    const showMainLabel = showFavSection && showMainSection;
+
+    this._favoritesLabel.visible = showFavSection;
+    this._favoritesView.visible = showFavSection;
+    this._mainLabel.visible = showMainLabel;
+    this._mainView.visible = showMainSection;
   }
 
   _loadApps() {
-    const appSys = Shell.AppSystem.get_default();
-    const installedApps = appSys.get_installed();
+    const installedApps = this._appSystem.get_installed();
 
     // Filter out broken desktop files and hidden apps
     const apps = installedApps.filter(appInfo => {
@@ -125,7 +188,8 @@ class VerticalAppDisplay extends St.Widget {
   }
 
   _redisplay() {
-    this._gridView.destroy_all_children();
+    this._favoritesView.destroy_all_children();
+    this._mainView.destroy_all_children();
     this._addAppIcons();
   }
 
