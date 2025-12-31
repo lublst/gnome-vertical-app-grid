@@ -227,9 +227,14 @@ class VerticalAppDisplayLayout extends Clutter.LayoutManager {
     const children = container.get_children();
     const childSize = this._getMinChildSize(children);
 
-    const size = this._columns * childSize + (this._columns - 1) * this._spacing;
+    const columns = Math.min(children.length, this._columns);
+    const size = columns * childSize + (columns - 1) * this._spacing;
 
-    return [size, size];
+    if (columns) {
+      return [size, size];
+    }
+
+    return [0, 0];
   }
 
   vfunc_get_preferred_height(container, _forWidth) {
@@ -239,7 +244,11 @@ class VerticalAppDisplayLayout extends Clutter.LayoutManager {
     const rows = Math.ceil(children.length / this._columns);
     const size = rows * childSize + (rows - 1) * this._spacing;
 
-    return [size, size];
+    if (rows) {
+      return [size, size];
+    }
+
+    return [0, 0];
   }
 
   vfunc_allocate(container, _box) {
