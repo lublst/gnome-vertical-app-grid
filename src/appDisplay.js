@@ -8,6 +8,8 @@ import * as AppDisplay from 'resource:///org/gnome/shell/ui/appDisplay.js';
 import * as AppFavorites from 'resource:///org/gnome/shell/ui/appFavorites.js';
 import * as ParentalControlsManager from 'resource:///org/gnome/shell/misc/parentalControlsManager.js';
 
+import { gettext as _ } from 'resource:///org/gnome/shell/extensions/extension.js';
+
 export const VerticalAppDisplay = GObject.registerClass(
 class VerticalAppDisplay extends St.Widget {
   _init(settings) {
@@ -46,7 +48,7 @@ class VerticalAppDisplay extends St.Widget {
     // Favorites section
     this._favoritesLabel = new St.Label({
       style_class: 'search-statustext',
-      text: 'Favorites'
+      text: _('Favorites')
     });
 
     this._favoritesLayout = new VerticalAppDisplayLayout(
@@ -61,7 +63,7 @@ class VerticalAppDisplay extends St.Widget {
     // Main section
     this._mainLabel = new St.Label({
       style_class: 'search-statustext',
-      text: 'All Apps'
+      text: _('All Apps')
     });
 
     this._mainLayout = new VerticalAppDisplayLayout(
@@ -84,6 +86,7 @@ class VerticalAppDisplay extends St.Widget {
 
     this._connectSignals();
     this._addAppIcons();
+    this._setLabelMargin();
   }
 
   _connectSignals() {
@@ -125,6 +128,8 @@ class VerticalAppDisplay extends St.Widget {
 
       this._favoritesLayout.spacing = spacing;
       this._mainLayout.spacing = spacing;
+
+      this._setLabelMargin();
     }, this);
 
     this._settings.connectObject('changed::icon-size', () => {
@@ -191,6 +196,13 @@ class VerticalAppDisplay extends St.Widget {
     this._favoritesView.destroy_all_children();
     this._mainView.destroy_all_children();
     this._addAppIcons();
+  }
+
+  _setLabelMargin() {
+    const spacing = this._settings.get_int('icon-spacing');
+
+    this._favoritesLabel.set_style(`margin: 0 0 ${spacing}px 0;`);
+    this._mainLabel.set_style(`margin: ${spacing * 2}px 0 ${spacing}px 0;`);
   }
 
   destroy() {
