@@ -1,5 +1,6 @@
 import Clutter from 'gi://Clutter';
 import GObject from 'gi://GObject';
+import Meta from 'gi://Meta';
 import Shell from 'gi://Shell';
 import St from 'gi://St';
 
@@ -14,6 +15,7 @@ export const VerticalAppDisplay = GObject.registerClass(
 class VerticalAppDisplay extends St.Widget {
   _init(settings) {
     this._settings = settings;
+    this._laters = global.compositor.get_laters();
 
     super._init({
       layout_manager: new Clutter.BinLayout()
@@ -28,14 +30,7 @@ class VerticalAppDisplay extends St.Widget {
 
     this.add_child(this._scrollView);
 
-    // Fade out the edges of the scroll view
-    const fadeEffect = new St.ScrollViewFade({
-      extend_fade_area: true
-    });
-
-    this._scrollView.add_effect(fadeEffect);
-
-    const scrollBox = new St.BoxLayout({
+    this._scrollBox = new St.BoxLayout({
       x_align: Clutter.ActorAlign.CENTER,
       y_align: Clutter.ActorAlign.CENTER,
       x_expand: false,
@@ -43,7 +38,17 @@ class VerticalAppDisplay extends St.Widget {
       vertical: true
     });
 
-    this._scrollView.set_child(scrollBox);
+    this._scrollView.set_child(this._scrollBox);
+
+    // Fade out the edges of the scroll view
+    const fadeEffect = new St.ScrollViewFade({
+      fade_margins: new Clutter.Margin({
+        top: 64,
+        bottom: 64
+      })
+    });
+
+    this._scrollView.add_effect(fadeEffect);
 
     // Favorites section
     this._favoritesLabel = new St.Label({
@@ -75,10 +80,10 @@ class VerticalAppDisplay extends St.Widget {
       layout_manager: this._mainLayout
     });
 
-    scrollBox.add_child(this._favoritesLabel);
-    scrollBox.add_child(this._favoritesView);
-    scrollBox.add_child(this._mainLabel);
-    scrollBox.add_child(this._mainView);
+    this._scrollBox.add_child(this._favoritesLabel);
+    this._scrollBox.add_child(this._favoritesView);
+    this._scrollBox.add_child(this._mainLabel);
+    this._scrollBox.add_child(this._mainView);
 
     this._appSystem = Shell.AppSystem.get_default();
     this._appFavorites = AppFavorites.getAppFavorites();
@@ -193,9 +198,12 @@ class VerticalAppDisplay extends St.Widget {
   }
 
   _redisplay() {
-    this._favoritesView.destroy_all_children();
-    this._mainView.destroy_all_children();
-    this._addAppIcons();
+    this._redisplayLater = this._laters.add(Meta.LaterType.IDLE, () => {
+      this._favoritesView.destroy_all_children();
+      this._mainView.destroy_all_children();
+
+      this._addAppIcons();
+    });
   }
 
   _setLabelMargin() {
@@ -206,6 +214,10 @@ class VerticalAppDisplay extends St.Widget {
   }
 
   destroy() {
+    if (this._redisplayLater) {
+      this._laters.remove(this._redisplayLater);
+    }
+
     for (const appIcon of this._appIcons) {
       appIcon.destroy();
     }
