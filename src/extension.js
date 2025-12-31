@@ -1,9 +1,10 @@
 import Clutter from 'gi://Clutter';
 
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+import * as AppMenu from 'resource:///org/gnome/shell/ui/appMenu.js';
 import * as OverviewControls from 'resource:///org/gnome/shell/ui/overviewControls.js';
 
-import { Extension } from 'resource:///org/gnome/shell/extensions/extension.js';
+import { Extension, gettext as _ } from 'resource:///org/gnome/shell/extensions/extension.js';
 import { InjectionManager } from 'resource:///org/gnome/shell/extensions/extension.js';
 
 import { VerticalAppDisplay } from './appDisplay.js';
@@ -50,6 +51,19 @@ export default class VerticalAppGridExtension extends Extension {
         duration: OverviewControls.SIDE_CONTROLS_ANIMATION_TIME,
         mode: Clutter.AnimationMode.EASE_OUT_QUAD
       });
+    });
+
+    // Rename the "Pin to Dash" item in the app menu
+    this._injectionManager.overrideMethod(AppMenu.AppMenu.prototype, '_updateFavoriteItem', originalFn => function () {
+      originalFn.call(this);
+
+      if (this._toggleFavoriteItem.visible) {
+        const text = this._appFavorites.isFavorite(this._app.id)
+          ? _('Remove from Favorites')
+          : _('Add to Favorites');
+
+        this._toggleFavoriteItem.label.text = text;
+      }
     });
   }
 
