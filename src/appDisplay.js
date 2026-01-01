@@ -214,6 +214,11 @@ class VerticalAppDisplay extends St.Widget {
   }
 
   destroy() {
+    this._appSystem.disconnectObject(this);
+    this._appFavorites.disconnectObject(this);
+    this._parentalControls.disconnectObject(this);
+    Main.overview.disconnectObject(this);
+
     if (this._redisplayLater) {
       this._laters.remove(this._redisplayLater);
     }
