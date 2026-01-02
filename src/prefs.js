@@ -14,6 +14,7 @@ export default class EssentialTweaksPreferences extends ExtensionPreferences {
 
     // Bind the UI to the settings
     const properties = [
+      ['auto-columns', 'active'],
       ['columns', 'value'],
       ['favorites-section', 'active'],
       ['icon-size', 'value'],
