@@ -21,35 +21,6 @@ class VerticalAppDisplay extends St.Widget {
       layout_manager: new Clutter.BinLayout()
     });
 
-    this._scrollView = new St.ScrollView({
-      hscrollbar_policy: St.PolicyType.NEVER,
-      vscrollbar_policy: St.PolicyType.NEVER,
-      x_expand: true,
-      y_expand: true
-    });
-
-    this.add_child(this._scrollView);
-
-    this._scrollBox = new St.BoxLayout({
-      x_align: Clutter.ActorAlign.CENTER,
-      y_align: Clutter.ActorAlign.CENTER,
-      x_expand: false,
-      y_expand: false,
-      vertical: true
-    });
-
-    this._scrollView.set_child(this._scrollBox);
-
-    // Fade out the edges of the scroll view
-    const fadeEffect = new St.ScrollViewFade({
-      fade_margins: new Clutter.Margin({
-        top: 64,
-        bottom: 64
-      })
-    });
-
-    this._scrollView.add_effect(fadeEffect);
-
     // Favorites section
     this._favoritesLabel = new St.Label({
       style_class: 'search-statustext',
@@ -80,10 +51,14 @@ class VerticalAppDisplay extends St.Widget {
       layout_manager: this._mainLayout
     });
 
-    this._scrollBox.add_child(this._favoritesLabel);
-    this._scrollBox.add_child(this._favoritesView);
-    this._scrollBox.add_child(this._mainLabel);
-    this._scrollBox.add_child(this._mainView);
+    this._scrollView = new VerticalScrollView();
+
+    this._scrollView.add_child(this._favoritesLabel);
+    this._scrollView.add_child(this._favoritesView);
+    this._scrollView.add_child(this._mainLabel);
+    this._scrollView.add_child(this._mainView);
+
+    this.add_child(this._scrollView);
 
     this._appSystem = Shell.AppSystem.get_default();
     this._appFavorites = AppFavorites.getAppFavorites();
@@ -229,6 +204,94 @@ class VerticalAppDisplay extends St.Widget {
 
     super.destroy();
   }
+});
+
+const VerticalScrollView = GObject.registerClass(
+class VerticalScrollView extends St.ScrollView {
+  _init() {
+    super._init({
+      effect: new St.ScrollViewFade({
+        fade_margins: new Clutter.Margin({
+          top: 64,
+          bottom: 64
+        })
+      }),
+      hscrollbar_policy: St.PolicyType.NEVER,
+      vscrollbar_policy: St.PolicyType.NEVER,
+      x_expand: true,
+      y_expand: true
+    });
+
+    this._scrollBox = new St.BoxLayout({
+      x_align: Clutter.ActorAlign.CENTER,
+      y_align: Clutter.ActorAlign.CENTER,
+      x_expand: false,
+      y_expand: false,
+      vertical: true
+    });
+
+    this.set_child(this._scrollBox);
+  }
+
+  add_child(child) {
+    this._scrollBox.add_child(child);
+  }
+
+  vfunc_scroll_event(event) {
+    let delta = 0;
+    let animate = false;
+
+    // Get scroll delta
+    const direction = event.get_scroll_direction();
+
+    if (direction === Clutter.ScrollDirection.SMOOTH) {
+			delta = event.get_scroll_delta()[this.orientation] ?? 0;
+		} else {
+      animate = true;
+
+			if (direction === Clutter.ScrollDirection.UP) {
+				delta = -1;
+			} else if (direction === Clutter.ScrollDirection.DOWN) {
+				delta = 1;
+			}
+    }
+
+		if (delta === 0) {
+      return Clutter.EVENT_STOP;
+    }
+
+    // Calculate the new scroll position
+    const step = 120;
+    const duration = 200;
+
+		const adjustment = this.vadjustment;
+		const transition = adjustment.get_transition('value');
+
+		let prevValue = transition ? transition.interval.final : adjustment.value;
+
+    // Prevent overshooting
+		if ((prevValue - adjustment.value) * delta < 0) {
+			prevValue = adjustment.value;
+		}
+
+		const value = Math.clamp(prevValue + delta * step, adjustment.lower, adjustment.upper);
+
+		if (value === adjustment.value) {
+      return Clutter.EVENT_STOP;
+    }
+
+    // Animate smooth scroll
+		if (animate) {
+			adjustment.ease(value, {
+				duration,
+				mode: Clutter.AnimationMode.EASE_OUT_QUAD
+			});
+		} else {
+			adjustment.value = value;
+		}
+
+		return Clutter.EVENT_STOP;
+	}
 });
 
 const VerticalAppDisplayLayout = GObject.registerClass(
