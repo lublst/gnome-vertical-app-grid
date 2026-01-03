@@ -19,13 +19,6 @@
 
     <child>
       <object class="AdwPreferencesGroup">
-
-        <child>
-          <object class="AdwSwitchRow" id="auto-columns">
-            <property name="title" translatable="yes">Auto Columns</property>
-          </object>
-        </child>
-
         <child>
           <object class="AdwSpinRow" id="columns">
             <property name="title" translatable="yes">Columns</property>
@@ -38,7 +31,6 @@
             </property>
           </object>
         </child>
-
       </object>
     </child>
 
