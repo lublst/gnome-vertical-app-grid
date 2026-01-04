@@ -10,6 +10,16 @@
     <child>
       <object class="AdwPreferencesGroup">
         <child>
+          <object class="AdwSwitchRow" id="animate-scroll">
+            <property name="title" translatable="yes">Smooth Scrolling</property>
+          </object>
+        </child>
+      </object>
+    </child>
+
+    <child>
+      <object class="AdwPreferencesGroup">
+        <child>
           <object class="AdwSwitchRow" id="favorites-section">
             <property name="title" translatable="yes">Show Favorites Section</property>
           </object>

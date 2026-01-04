@@ -2,6 +2,10 @@
 <schemalist>
   <schema id="org.gnome.shell.extensions.vertical-app-grid" path="/org/gnome/shell/extensions/vertical-app-grid/">
 
+    <key name="animate-scroll" type="b">
+      <default>true</default>
+    </key>
+
     <key name="columns" type="i">
       <default>6</default>
     </key>

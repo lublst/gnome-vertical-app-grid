@@ -21,37 +21,25 @@ class VerticalAppDisplay extends St.Widget {
       layout_manager: new Clutter.BinLayout()
     });
 
-    // Favorites section
     this._favoritesLabel = new St.Label({
       style_class: 'search-statustext',
       text: _('Favorites')
     });
 
-    this._favoritesLayout = new VerticalAppDisplayLayout(
-      this._settings.get_int('columns'),
-      this._settings.get_int('icon-spacing')
-    );
-
     this._favoritesView = new St.Viewport({
-      layout_manager: this._favoritesLayout
+      layout_manager: new VerticalLayout(settings)
     });
 
-    // Main section
     this._mainLabel = new St.Label({
       style_class: 'search-statustext',
       text: _('All Apps')
     });
 
-    this._mainLayout = new VerticalAppDisplayLayout(
-      this._settings.get_int('columns'),
-      this._settings.get_int('icon-spacing')
-    );
-
     this._mainView = new St.Viewport({
-      layout_manager: this._mainLayout
+      layout_manager: new VerticalLayout(settings)
     });
 
-    this._scrollView = new VerticalScrollView();
+    this._scrollView = new VerticalScrollView(settings);
 
     this._scrollView.add_child(this._favoritesLabel);
     this._scrollView.add_child(this._favoritesView);
@@ -63,18 +51,14 @@ class VerticalAppDisplay extends St.Widget {
     this._appSystem = Shell.AppSystem.get_default();
     this._appFavorites = AppFavorites.getAppFavorites();
     this._parentalControls = ParentalControlsManager.getDefault();
+    this._overview = Main.overview;
 
     this._connectSignals();
     this._addAppIcons();
-    this._setLabelMargin();
+    this._updateLabelMargins();
   }
 
   _connectSignals() {
-    // Redisplay when the favorites section is toggled
-    this._settings.connectObject('changed::favorites-section', () => {
-      this._redisplay();
-    }, this);
-
     // Redisplay the app grid when an app was installed or removed
     this._appSystem.connectObject('installed-changed', () => {
       this._redisplay();
@@ -91,25 +75,13 @@ class VerticalAppDisplay extends St.Widget {
     }, this);
 
     // Reset scroll when the overview is hidden
-    Main.overview.connectObject('hidden', () => {
+    this._overview.connectObject('hidden', () => {
       this._scrollView.vadjustment.set_value(0);
     }, this);
 
     // Update layout when settings change
-    this._settings.connectObject('changed::columns', () => {
-      const columns = this._settings.get_int('columns');
-
-      this._favoritesLayout.columns = columns;
-      this._mainLayout.columns = columns;
-    }, this);
-
-    this._settings.connectObject('changed::icon-spacing', () => {
-      const spacing = this._settings.get_int('icon-spacing');
-
-      this._favoritesLayout.spacing = spacing;
-      this._mainLayout.spacing = spacing;
-
-      this._setLabelMargin();
+    this._settings.connectObject('changed::favorites-section', () => {
+      this._redisplay();
     }, this);
 
     this._settings.connectObject('changed::icon-size', () => {
@@ -118,6 +90,10 @@ class VerticalAppDisplay extends St.Widget {
       this._appIcons.forEach(appIcon => {
         appIcon.icon.setIconSize(size);
       });
+    }, this);
+
+    this._settings.connectObject('changed::icon-spacing', () => {
+      this._updateLabelMargins();
     }, this);
   }
 
@@ -181,7 +157,7 @@ class VerticalAppDisplay extends St.Widget {
     });
   }
 
-  _setLabelMargin() {
+  _updateLabelMargins() {
     const spacing = this._settings.get_int('icon-spacing');
 
     this._favoritesLabel.set_style(`margin: 0 0 ${spacing}px 0;`);
@@ -192,7 +168,7 @@ class VerticalAppDisplay extends St.Widget {
     this._appSystem.disconnectObject(this);
     this._appFavorites.disconnectObject(this);
     this._parentalControls.disconnectObject(this);
-    Main.overview.disconnectObject(this);
+    this._overview.disconnectObject(this);
 
     if (this._redisplayLater) {
       this._laters.remove(this._redisplayLater);
@@ -208,7 +184,9 @@ class VerticalAppDisplay extends St.Widget {
 
 const VerticalScrollView = GObject.registerClass(
 class VerticalScrollView extends St.ScrollView {
-  _init() {
+  _init(settings) {
+    this._settings = settings;
+
     super._init({
       effect: new St.ScrollViewFade({
         fade_margins: new Clutter.Margin({
@@ -238,6 +216,14 @@ class VerticalScrollView extends St.ScrollView {
   }
 
   vfunc_scroll_event(event) {
+    if (this._settings.get_boolean('animate-scroll')) {
+      return this._animateScroll(event);
+    }
+
+    return super.vfunc_scroll_event(event);
+  }
+
+  _animateScroll(event) {
     let delta = 0;
     let animate = false;
 
@@ -245,62 +231,76 @@ class VerticalScrollView extends St.ScrollView {
     const direction = event.get_scroll_direction();
 
     if (direction === Clutter.ScrollDirection.SMOOTH) {
-			delta = event.get_scroll_delta()[this.orientation] ?? 0;
-		} else {
+      delta = event.get_scroll_delta()[this.orientation] ?? 0;
+    } else {
       animate = true;
 
-			if (direction === Clutter.ScrollDirection.UP) {
-				delta = -1;
-			} else if (direction === Clutter.ScrollDirection.DOWN) {
-				delta = 1;
-			}
+      if (direction === Clutter.ScrollDirection.UP) {
+        delta = -1;
+      } else if (direction === Clutter.ScrollDirection.DOWN) {
+        delta = 1;
+      }
     }
 
-		if (delta === 0) {
+    if (delta === 0) {
       return Clutter.EVENT_STOP;
     }
 
     // Calculate the new scroll position
     const step = 120;
-    const duration = 200;
 
-		const adjustment = this.vadjustment;
-		const transition = adjustment.get_transition('value');
+    const adjustment = this.vadjustment;
+    const transition = adjustment.get_transition('value');
 
-		let prevValue = transition ? transition.interval.final : adjustment.value;
+    let prevValue = transition ? transition.interval.final : adjustment.value;
 
     // Prevent overshooting
-		if ((prevValue - adjustment.value) * delta < 0) {
-			prevValue = adjustment.value;
-		}
+    if ((prevValue - adjustment.value) * delta < 0) {
+      prevValue = adjustment.value;
+    }
 
-		const value = Math.clamp(prevValue + delta * step, adjustment.lower, adjustment.upper);
+    const value = Math.clamp(
+      prevValue + delta * step,
+      adjustment.lower,
+      adjustment.upper - adjustment.page_size
+    );
 
-		if (value === adjustment.value) {
+    if (value === adjustment.value) {
       return Clutter.EVENT_STOP;
     }
 
     // Animate smooth scroll
-		if (animate) {
-			adjustment.ease(value, {
-				duration,
-				mode: Clutter.AnimationMode.EASE_OUT_QUAD
-			});
-		} else {
-			adjustment.value = value;
-		}
+    if (animate) {
+      adjustment.ease(value, {
+        duration: 200,
+        mode: Clutter.AnimationMode.EASE_OUT_CUBIC
+      });
+    } else {
+      adjustment.value = value;
+    }
 
-		return Clutter.EVENT_STOP;
-	}
+    return Clutter.EVENT_STOP;
+  }
 });
 
-const VerticalAppDisplayLayout = GObject.registerClass(
-class VerticalAppDisplayLayout extends Clutter.LayoutManager {
-  _init(columns, spacing) {
+const VerticalLayout = GObject.registerClass(
+class VerticalLayout extends Clutter.LayoutManager {
+  _init(settings) {
     super._init();
 
-    this._columns = columns;
-    this._spacing = spacing;
+    this._settings = settings;
+
+    settings.connectObject('changed', key => {
+      if (['columns', 'icon-spacing'].includes(key)) {
+        this._columns = settings.get_int('columns');
+        this._spacing = settings.get_int('icon-spacing');
+
+        this.layout_changed();
+      }
+    }, this);
+
+    this._columns = settings.get_int('columns');
+    this._spacing = settings.get_int('icon-spacing');
   }
 
   vfunc_get_preferred_width(container, _forHeight) {
@@ -376,11 +376,7 @@ class VerticalAppDisplayLayout extends Clutter.LayoutManager {
     return Math.max(minWidth, minHeight);
   }
 
-  set columns(columns) {
-    this._columns = columns;
-  }
-
-  set spacing(spacing) {
-    this._spacing = spacing;
+  destroy() {
+    this._settings.disconnectObject(this);
   }
 });
