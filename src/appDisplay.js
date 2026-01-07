@@ -49,6 +49,7 @@ class VerticalAppDisplay extends St.Widget {
     this.add_child(this._scrollView);
 
     this._appSystem = Shell.AppSystem.get_default();
+    this._appUsage = Shell.AppUsage.get_default();
     this._appFavorites = AppFavorites.getAppFavorites();
     this._parentalControls = ParentalControlsManager.getDefault();
     this._overview = Main.overview;
@@ -80,20 +81,19 @@ class VerticalAppDisplay extends St.Widget {
     }, this);
 
     // Update layout when settings change
-    this._settings.connectObject('changed::favorites-section', () => {
-      this._redisplay();
-    }, this);
+    this._settings.connectObject('changed', (_, key) => {
+      switch (key) {
+        case 'app-sorting':
+        case 'favorites-section':
+        case 'favorites-sorting':
+          return this._redisplay();
 
-    this._settings.connectObject('changed::icon-size', () => {
-      const size = this._settings.get_int('icon-size');
+        case 'icon-spacing':
+          return this._updateLabelMargins();
 
-      this._appIcons.forEach(appIcon => {
-        appIcon.icon.setIconSize(size);
-      });
-    }, this);
-
-    this._settings.connectObject('changed::icon-spacing', () => {
-      this._updateLabelMargins();
+        case 'icon-size':
+          return this._updateIconSize();
+      }
     }, this);
   }
 
@@ -101,18 +101,19 @@ class VerticalAppDisplay extends St.Widget {
     const iconSize = this._settings.get_int('icon-size');
     const favSection = this._settings.get_boolean('favorites-section');
 
-    this._appIcons = this._loadApps()
-      .map(id => this._appSystem.lookup_app(id))
-      .map(app => new AppDisplay.AppIcon(app, { isDraggable: false }));
+    this._appIcons = this._loadApps().map(appId => {
+      const app = this._appSystem.lookup_app(appId);
+      const appIcon = new AppDisplay.AppIcon(app, { isDraggable: false })
 
-    this._appIcons.forEach(appIcon => {
       appIcon.icon.setIconSize(iconSize);
 
-      if (favSection && this._appFavorites.isFavorite(appIcon._id)) {
+      if (favSection && this._appFavorites.isFavorite(appId)) {
         this._favoritesView.add_child(appIcon);
       } else {
         this._mainView.add_child(appIcon);
       }
+
+      return appIcon;
     });
 
     const showFavSection = this._favoritesView.get_children().length > 0;
@@ -128,24 +129,52 @@ class VerticalAppDisplay extends St.Widget {
   _loadApps() {
     const installedApps = this._appSystem.get_installed();
 
-    // Filter out broken desktop files and hidden apps
-    const apps = installedApps.filter(appInfo => {
-      try {
-        return !!appInfo.get_id() && this._parentalControls.shouldShowApp(appInfo);
-      } catch {
-        return false;
+    const favs = [];
+    const apps = [];
+
+    // Filter out hidden apps and split off favorites
+    installedApps.forEach(appInfo => { try {
+      const appId = appInfo.get_id();
+      const isFav = this._appFavorites.isFavorite(appId);
+
+      if (this._parentalControls.shouldShowApp(appInfo)) { if (isFav) {
+        favs.push(appInfo);
+      } else {
+        apps.push(appInfo);
+      } }
+    } catch { } });
+
+    // Sort favorites
+    const favSorting = this._settings.get_string('favorites-sorting');
+    const favIds = this._appFavorites._getIds();
+
+    favs.sort((a, b) => {
+      switch (favSorting) {
+        case 'dash':
+          return favIds.indexOf(a.get_id()) - favIds.indexOf(b.get_id());
+
+        case 'usage':
+          return this._appUsage.compare(a.get_id(), b.get_id()) ?? 0;
+
+        case 'alphabetical': default:
+          return a.get_name().toLowerCase().localeCompare(b.get_name().toLowerCase());
       }
     });
 
-    // Sort alphabetically
-    apps.sort((a, b) => {
-      const aName = a.get_name().toLowerCase();
-      const bName = b.get_name().toLowerCase();
+    // Sort apps
+    const appSorting = this._settings.get_string('app-sorting');
 
-      return aName.localeCompare(bName);
+    apps.sort((a, b) => {
+      switch (appSorting) {
+        case 'usage':
+          return this._appUsage.compare(a.get_id(), b.get_id()) ?? 0;
+
+        case 'alphabetical': default:
+          return a.get_name().toLowerCase().localeCompare(b.get_name().toLowerCase());
+      }
     });
 
-    return apps.map(appInfo => appInfo.get_id());
+    return [...favs, ...apps].map(appInfo => appInfo.get_id());
   }
 
   _redisplay() {
@@ -164,11 +193,20 @@ class VerticalAppDisplay extends St.Widget {
     this._mainLabel.set_style(`margin: ${spacing * 2}px 0 ${spacing}px 0;`);
   }
 
+  _updateIconSize() {
+    const size = this._settings.get_int('icon-size');
+
+    this._appIcons.forEach(appIcon => {
+      appIcon.icon.setIconSize(size);
+    });
+  }
+
   destroy() {
     this._appSystem.disconnectObject(this);
     this._appFavorites.disconnectObject(this);
     this._parentalControls.disconnectObject(this);
     this._overview.disconnectObject(this);
+    this._settings.disconnectObject(this);
 
     if (this._redisplayLater) {
       this._laters.remove(this._redisplayLater);
@@ -259,11 +297,7 @@ class VerticalScrollView extends St.ScrollView {
       prevValue = adjustment.value;
     }
 
-    const value = Math.clamp(
-      prevValue + delta * step,
-      adjustment.lower,
-      adjustment.upper - adjustment.page_size
-    );
+    const value = prevValue + delta * step;
 
     if (value === adjustment.value) {
       return Clutter.EVENT_STOP;
@@ -290,7 +324,7 @@ class VerticalLayout extends Clutter.LayoutManager {
 
     this._settings = settings;
 
-    settings.connectObject('changed', key => {
+    settings.connectObject('changed', (_, key) => {
       if (['columns', 'icon-spacing'].includes(key)) {
         this._columns = settings.get_int('columns');
         this._spacing = settings.get_int('icon-spacing');

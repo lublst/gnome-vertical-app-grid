@@ -5,15 +5,41 @@
 
   <object class="AdwPreferencesPage" id="preferences-page">
     <property name="title" translatable="yes">Preferences</property>
-    <property name="icon-name">org.gnome.Settings-applications-symbolic</property>
+    <property name="icon-name">org.gnome.Settings-system-symbolic</property>
 
     <child>
       <object class="AdwPreferencesGroup">
+        <property name="title" translatable="yes">App Grid</property>
+
         <child>
-          <object class="AdwSwitchRow" id="animate-scroll">
-            <property name="title" translatable="yes">Smooth Scrolling</property>
+          <object class="AdwComboRow" id="app-sorting">
+            <property name="title" translatable="yes">App Sorting</property>
+            <property name="model">
+              <object class="GtkStringList">
+                <items>
+                  <item translatable="yes">Most Used</item>
+                  <item translatable="yes">Alphabetical</item>
+                </items>
+              </object>
+            </property>
           </object>
         </child>
+
+        <child>
+          <object class="AdwComboRow" id="favorites-sorting">
+            <property name="title" translatable="yes">Favorites Sorting</property>
+            <property name="model">
+              <object class="GtkStringList">
+                <items>
+                  <item translatable="yes">As In Dash</item>
+                  <item translatable="yes">Most Used</item>
+                  <item translatable="yes">Alphabetical</item>
+                </items>
+              </object>
+            </property>
+          </object>
+        </child>
+
       </object>
     </child>
 
@@ -30,6 +56,18 @@
     <child>
       <object class="AdwPreferencesGroup">
         <child>
+          <object class="AdwSwitchRow" id="animate-scroll">
+            <property name="title" translatable="yes">Smooth Scrolling</property>
+          </object>
+        </child>
+      </object>
+    </child>
+
+    <child>
+      <object class="AdwPreferencesGroup">
+        <property name="title" translatable="yes">Customization</property>
+
+        <child>
           <object class="AdwSpinRow" id="columns">
             <property name="title" translatable="yes">Columns</property>
             <property name="adjustment">
@@ -41,11 +79,6 @@
             </property>
           </object>
         </child>
-      </object>
-    </child>
-
-    <child>
-      <object class="AdwPreferencesGroup">
 
         <child>
           <object class="AdwSpinRow" id="icon-size">

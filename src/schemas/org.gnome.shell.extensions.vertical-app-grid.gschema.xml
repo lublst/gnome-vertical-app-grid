@@ -6,12 +6,20 @@
       <default>true</default>
     </key>
 
+    <key name="app-sorting" type="s">
+      <default>'usage'</default>
+    </key>
+
     <key name="columns" type="i">
       <default>6</default>
     </key>
 
     <key name="favorites-section" type="b">
       <default>true</default>
+    </key>
+
+    <key name="favorites-sorting" type="s">
+      <default>'dash'</default>
     </key>
 
     <key name="icon-size" type="i">

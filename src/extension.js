@@ -38,6 +38,8 @@ export default class VerticalAppGridExtension extends Extension {
       extension._vertAppDisplay.visible =
         state > OverviewControls.ControlsState.WINDOW_PICKER &&
         !this._searchController.searchActive;
+
+      extension._overviewControls._appDisplay._disconnectDnD();
     });
 
     // Fade out the app display when the search becomes active
@@ -73,6 +75,8 @@ export default class VerticalAppGridExtension extends Extension {
     this._overviewControls.remove_child(this._vertAppDisplay);
     this._injectionManager.clear();
     this._vertAppDisplay.destroy();
+
+    this._overviewControls._appDisplay._connectDnD();
 
     this._settings = null;
     this._vertAppDisplay = null;

@@ -24,5 +24,18 @@ export default class EssentialTweaksPreferences extends ExtensionPreferences {
     properties.forEach(([key, property]) => {
       settings.bind(key, builder.get_object(key), property, Gio.SettingsBindFlags.DEFAULT);
     });
+
+    this._bindComboRow(builder, settings, 'app-sorting', ['usage', 'alphabetical']);
+    this._bindComboRow(builder, settings, 'favorites-sorting', ['dash', 'usage', 'alphabetical']);
+  }
+
+  _bindComboRow(builder, settings, key, values) {
+    const comboRow = builder.get_object(key);
+
+    comboRow.connect('notify::selected', () => {
+      settings.set_string(key, values[comboRow.selected]);
+    });
+
+    comboRow.set_selected(values.indexOf(settings.get_string(key)));
   }
 }
