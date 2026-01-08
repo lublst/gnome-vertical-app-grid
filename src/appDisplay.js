@@ -10,6 +10,7 @@ import * as AppFavorites from 'resource:///org/gnome/shell/ui/appFavorites.js';
 import * as ParentalControlsManager from 'resource:///org/gnome/shell/misc/parentalControlsManager.js';
 
 import { gettext as _ } from 'resource:///org/gnome/shell/extensions/extension.js';
+import { SIDE_CONTROLS_ANIMATION_TIME } from 'resource:///org/gnome/shell/ui/overviewControls.js';
 
 export const VerticalAppDisplay = GObject.registerClass(
 class VerticalAppDisplay extends St.Widget {
@@ -178,11 +179,23 @@ class VerticalAppDisplay extends St.Widget {
   }
 
   _redisplay() {
-    this._redisplayLater = this._laters.add(Meta.LaterType.IDLE, () => {
-      this._favoritesView.destroy_all_children();
-      this._mainView.destroy_all_children();
+    this._animateRedisplay(() => {
+      this._redisplayLater = this._laters.add(Meta.LaterType.IDLE, () => {
+        this._favoritesView.destroy_all_children();
+        this._mainView.destroy_all_children();
 
-      this._addAppIcons();
+        this._addAppIcons();
+        this._animateRedisplay();
+      });
+    });
+  }
+
+  _animateRedisplay(onComplete) {
+    this._scrollView.ease({
+      onComplete,
+      opacity: onComplete ? 0 : 255,
+      duration: SIDE_CONTROLS_ANIMATION_TIME,
+      mode: Clutter.AnimationMode.EASE_OUT_QUAD
     });
   }
 
