@@ -39,7 +39,14 @@ export default class VerticalAppGridExtension extends Extension {
         state > OverviewControls.ControlsState.WINDOW_PICKER &&
         !this._searchController.searchActive;
 
-      extension._overviewControls._appDisplay._disconnectDnD();
+      // Focus the vertical app display
+      if (extension._vertAppDisplay.visible) {
+        global.stage.set_key_focus(extension._vertAppDisplay);
+      }
+
+      // Disable drag and drop on the original app grid to prevent internal
+      // errors when rearranging app icons in the dash
+      extension._overviewControls.appDisplay._disconnectDnD();
     });
 
     // Fade out the app display when the search becomes active
@@ -70,13 +77,14 @@ export default class VerticalAppGridExtension extends Extension {
   }
 
   disable() {
-    this._overviewLayoutManager._appDisplay = this._overviewControls._appDisplay;
+    this._overviewLayoutManager._appDisplay = this._overviewControls.appDisplay;
 
     this._overviewControls.remove_child(this._vertAppDisplay);
     this._injectionManager.clear();
     this._vertAppDisplay.destroy();
 
-    this._overviewControls._appDisplay._connectDnD();
+    this._overviewControls.appDisplay._disconnectDnD();
+    this._overviewControls.appDisplay._connectDnD();
 
     this._settings = null;
     this._vertAppDisplay = null;

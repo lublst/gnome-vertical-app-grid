@@ -19,7 +19,9 @@ class VerticalAppDisplay extends St.Widget {
     this._laters = global.compositor.get_laters();
 
     super._init({
-      layout_manager: new Clutter.BinLayout()
+      layout_manager: new Clutter.BinLayout(),
+      can_focus: true,
+      reactive: true
     });
 
     this._favoritesLabel = new St.Label({
@@ -214,6 +216,60 @@ class VerticalAppDisplay extends St.Widget {
     });
   }
 
+  vfunc_key_press_event(event) {
+    const key = event.get_key_symbol();
+    const focused = global.stage.get_key_focus();
+
+    // Keyboard scroll
+    const adjustment = this._scrollView.vadjustment;
+    const pageSize = adjustment.page_size;
+
+    const scroll = {
+      [Clutter.KEY_Home]: 0,
+      [Clutter.KEY_End]: adjustment.upper - pageSize,
+      [Clutter.KEY_Page_Up]: adjustment.value - pageSize * 0.8,
+      [Clutter.KEY_Page_Down]: adjustment.value + pageSize * 0.8
+    };
+
+    if (scroll[key] !== undefined) {
+      return this._scrollView.scrollTo(scroll[key]);
+    }
+
+    // Tab and arrow key navigation
+    const navTarget = this._getNavTarget(focused, key);
+
+    if (navTarget) {
+      navTarget.grab_key_focus();
+
+      return Clutter.EVENT_STOP;
+    }
+
+    return Clutter.EVENT_PROPAGATE;
+  }
+
+  _getNavTarget(focused, key) {
+    const index = this._appIcons.indexOf(focused);
+    const last = this._appIcons.length - 1;
+
+    let targetIndex = index;
+
+    if (index === -1) {
+      if (key === Clutter.KEY_Tab) {
+        targetIndex = 0;
+      } else if (key === Clutter.KEY_ISO_Left_Tab) {
+        targetIndex = last;
+      }
+    } else {
+      if (key === Clutter.KEY_Tab) {
+        targetIndex = index < last ? index + 1 : 0;
+      } else if (key === Clutter.KEY_ISO_Left_Tab) {
+        targetIndex = index > 0 ? index - 1 : last;
+      }
+    }
+
+    return this._appIcons[targetIndex];
+  }
+
   destroy() {
     this._appSystem.disconnectObject(this);
     this._appFavorites.disconnectObject(this);
@@ -266,6 +322,24 @@ class VerticalScrollView extends St.ScrollView {
     this._scrollBox.add_child(child);
   }
 
+  scrollTo(value, clamp = true, animate = true) {
+    const adjustment = this.vadjustment;
+
+    if (animate) {
+      const min = adjustment.lower;
+      const max = adjustment.upper - adjustment.page_size;
+
+      adjustment.ease(clamp ? Math.clamp(value, min, max) : value, {
+        duration: 200,
+        mode: Clutter.AnimationMode.EASE_OUT_CUBIC
+      });
+    } else {
+      adjustment.value = value;
+    }
+
+    return Clutter.EVENT_STOP;
+  }
+
   vfunc_scroll_event(event) {
     if (this._settings.get_boolean('animate-scroll')) {
       return this._animateScroll(event);
@@ -297,36 +371,8 @@ class VerticalScrollView extends St.ScrollView {
       return Clutter.EVENT_STOP;
     }
 
-    // Calculate the new scroll position
-    const step = 120;
-
-    const adjustment = this.vadjustment;
-    const transition = adjustment.get_transition('value');
-
-    let prevValue = transition ? transition.interval.final : adjustment.value;
-
-    // Prevent overshooting
-    if ((prevValue - adjustment.value) * delta < 0) {
-      prevValue = adjustment.value;
-    }
-
-    const value = prevValue + delta * step;
-
-    if (value === adjustment.value) {
-      return Clutter.EVENT_STOP;
-    }
-
-    // Animate smooth scroll
-    if (animate) {
-      adjustment.ease(value, {
-        duration: 200,
-        mode: Clutter.AnimationMode.EASE_OUT_CUBIC
-      });
-    } else {
-      adjustment.value = value;
-    }
-
-    return Clutter.EVENT_STOP;
+    // Animate to the new scroll position
+    return this.scrollTo(this.vadjustment.value + delta * 120, false, animate);
   }
 });
 
