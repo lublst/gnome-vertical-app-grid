@@ -1,4 +1,5 @@
 import Clutter from 'gi://Clutter';
+import GLib from 'gi://GLib';
 import GObject from 'gi://GObject';
 import Meta from 'gi://Meta';
 import Shell from 'gi://Shell';
@@ -11,6 +12,10 @@ import * as ParentalControlsManager from 'resource:///org/gnome/shell/misc/paren
 
 import { gettext as _ } from 'resource:///org/gnome/shell/extensions/extension.js';
 import { SIDE_CONTROLS_ANIMATION_TIME } from 'resource:///org/gnome/shell/ui/overviewControls.js';
+
+function easeOutCubic(t) {
+  return (--t) * t * t + 1;
+}
 
 export const VerticalAppDisplay = GObject.registerClass(
 class VerticalAppDisplay extends St.Widget {
@@ -80,7 +85,7 @@ class VerticalAppDisplay extends St.Widget {
 
     // Reset scroll when the overview is hidden
     this._overview.connectObject('hidden', () => {
-      this._scrollView.vadjustment.set_value(0);
+      this._scrollView.scrollTo(0, false);
     }, this);
 
     // Update layout when settings change
@@ -220,19 +225,34 @@ class VerticalAppDisplay extends St.Widget {
     const key = event.get_key_symbol();
     const focused = global.stage.get_key_focus();
 
+    if (key === Clutter.KEY_Escape) {
+      return Clutter.EVENT_PROPAGATE;
+    }
+
     // Keyboard scroll
     const adjustment = this._scrollView.vadjustment;
     const pageSize = adjustment.page_size;
+    const min = adjustment.lower;
+    const max = adjustment.upper - pageSize;
 
     const scroll = {
       [Clutter.KEY_Home]: 0,
       [Clutter.KEY_End]: adjustment.upper - pageSize,
-      [Clutter.KEY_Page_Up]: adjustment.value - pageSize * 0.8,
-      [Clutter.KEY_Page_Down]: adjustment.value + pageSize * 0.8
+      [Clutter.KEY_Page_Up]: this._scrollView.scroll - pageSize * 0.8,
+      [Clutter.KEY_Page_Down]: this._scrollView.scroll + pageSize * 0.8
     };
 
     if (scroll[key] !== undefined) {
-      return this._scrollView.scrollTo(scroll[key]);
+      const scrollClamped = Math.clamp(scroll[key], min, max);
+      const distance = Math.abs(this._scrollView.scroll - scrollClamped);
+
+      // Only scroll if the clamped distance is greater than zero to prevent
+      // rapidly retriggering the animation while holding down a key
+      if (distance) {
+        return this._scrollView.scrollTo(scrollClamped);
+      }
+
+      return Clutter.EVENT_STOP;
     }
 
     // Tab and arrow key navigation
@@ -294,6 +314,17 @@ class VerticalScrollView extends St.ScrollView {
   _init(settings) {
     this._settings = settings;
 
+    this._scroll = 0;
+    this._trackpadTime = 0;
+
+    this._scrollAnim = {
+      lock: null,
+      startTime: 0,
+      startValue: 0,
+      duration: 0,
+      delta: 0
+    };
+
     super._init({
       effect: new St.ScrollViewFade({
         fade_margins: new Clutter.Margin({
@@ -322,22 +353,59 @@ class VerticalScrollView extends St.ScrollView {
     this._scrollBox.add_child(child);
   }
 
-  scrollTo(value, clamp = true, animate = true) {
+  scrollTo(value, animate = true, duration = 200) {
+    const now = GLib.get_monotonic_time();
+
     const adjustment = this.vadjustment;
+    const anim = this._scrollAnim;
+
+    const min = adjustment.lower;
+    const max = adjustment.upper - adjustment.page_size;
+
+    this._scroll = Math.clamp(value, min, max);
 
     if (animate) {
-      const min = adjustment.lower;
-      const max = adjustment.upper - adjustment.page_size;
+      // Init scroll animation
+      anim.startTime = now;
+      anim.startValue = adjustment.value;
+      anim.duration = duration * 1000;
+      anim.delta = this.scroll - adjustment.value;
 
-      adjustment.ease(clamp ? Math.clamp(value, min, max) : value, {
-        duration: 200,
-        mode: Clutter.AnimationMode.EASE_OUT_CUBIC
-      });
+      if (anim.lock === null) {
+        anim.lock = global.stage.connect('after-paint', this._scrollAnimationFrame.bind(this));
+      }
     } else {
-      adjustment.value = value;
+      // Cancel running animation
+      if (anim.lock) {
+        anim.lock = global.stage.disconnect(anim.lock) || null;
+      }
+
+      adjustment.value = this.scroll;
     }
 
+    // Redraw to trigger the next animation frame
+    this.queue_redraw();
+
     return Clutter.EVENT_STOP;
+  }
+
+  _scrollAnimationFrame() {
+    const now = GLib.get_monotonic_time();
+
+    const adjustment = this.vadjustment;
+    const anim = this._scrollAnim;
+
+    // Animate towards the scroll target
+    const elapsed = now - anim.startTime;
+    const progress = Math.clamp(elapsed / anim.duration, 0, 1);
+
+    adjustment.value = anim.startValue + anim.delta * easeOutCubic(progress);
+
+    if (progress >= 1) {
+      anim.lock = global.stage.disconnect(anim.lock) || null;
+    }
+
+    this.queue_redraw();
   }
 
   vfunc_scroll_event(event) {
@@ -349,30 +417,56 @@ class VerticalScrollView extends St.ScrollView {
   }
 
   _animateScroll(event) {
+    const now = GLib.get_monotonic_time();
+
+    // Ignore emulated events
+    if (event.get_flags() & Clutter.EventFlags.FLAG_POINTER_EMULATED) {
+      return Clutter.EVENT_STOP;
+    }
+
+    // Get scroll delta
+    const adjustment = this.vadjustment;
+
+    const direction = event.get_scroll_direction();
+    const step = adjustment.page_size ** (2 / 3);
+
     let delta = 0;
     let animate = false;
 
-    // Get scroll delta
-    const direction = event.get_scroll_direction();
-
     if (direction === Clutter.ScrollDirection.SMOOTH) {
-      delta = event.get_scroll_delta()[this.orientation] ?? 0;
-    } else {
-      animate = true;
+      // Sometimes events without a smooth delta are emitted when using a
+      // trackpad, so this debounce timestamp is used to prevent any sudden
+      // jumps while scrolling
+      this._trackpadTime = now;
 
+      delta = event.get_scroll_delta()[Clutter.Orientation.VERTICAL] ?? 0;
+    } else if (now - this._trackpadTime > 1000 * 1000) {
       if (direction === Clutter.ScrollDirection.UP) {
         delta = -1;
       } else if (direction === Clutter.ScrollDirection.DOWN) {
         delta = 1;
       }
-    }
 
-    if (delta === 0) {
-      return Clutter.EVENT_STOP;
+      animate = true;
     }
 
     // Animate to the new scroll position
-    return this.scrollTo(this.vadjustment.value + delta * 120, false, animate);
+    const min = adjustment.lower;
+    const max = adjustment.upper - adjustment.page_size;
+
+    const clampedScroll = Math.clamp(this.scroll + delta * step, min, max);
+    const distance = Math.abs(this.scroll - clampedScroll);
+    const duration = (distance / 100) * 200;
+
+    if (distance === 0) {
+      return Clutter.EVENT_STOP;
+    }
+
+    return this.scrollTo(clampedScroll, animate, duration);
+  }
+
+  get scroll() {
+    return this._scroll;
   }
 });
 
