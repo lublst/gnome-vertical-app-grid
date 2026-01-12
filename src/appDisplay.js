@@ -232,8 +232,6 @@ class VerticalAppDisplay extends St.Widget {
     // Keyboard scroll
     const adjustment = this._scrollView.vadjustment;
     const pageSize = adjustment.page_size;
-    const min = adjustment.lower;
-    const max = adjustment.upper - pageSize;
 
     const scroll = {
       [Clutter.KEY_Home]: 0,
@@ -243,22 +241,14 @@ class VerticalAppDisplay extends St.Widget {
     };
 
     if (scroll[key] !== undefined) {
-      const scrollClamped = Math.clamp(scroll[key], min, max);
-      const distance = Math.abs(this._scrollView.scroll - scrollClamped);
-
-      // Only scroll if the clamped distance is greater than zero to prevent
-      // rapidly retriggering the animation while holding down a key
-      if (distance) {
-        return this._scrollView.scrollTo(scrollClamped);
-      }
-
-      return Clutter.EVENT_STOP;
+      return this._scrollView.scrollTo(scroll[key]);
     }
 
     // Tab and arrow key navigation
     const navTarget = this._getNavTarget(focused, key);
 
     if (navTarget) {
+      this._scrollView.scrollToChild(navTarget);
       navTarget.grab_key_focus();
 
       return Clutter.EVENT_STOP;
@@ -353,16 +343,45 @@ class VerticalScrollView extends St.ScrollView {
     this._scrollBox.add_child(child);
   }
 
-  scrollTo(value, animate = true, duration = 200) {
+  scrollToChild(child) {
+    const childBox = child.get_allocation_box();
+
+    // Get the child's vertical position inside the scroll view
+    let actor = child;
+    let childY = childBox.y1;
+
+    while ((actor = actor.get_parent()) !== this) {
+      childY += actor.get_allocation_box().y1;
+    }
+
+    // Scroll to keep the child vertically centered
+    const adjustment = this.vadjustment;
+
+    const childCenter = childY + childBox.get_height() / 2;
+    const scroll = childCenter - adjustment.page_size / 2;
+
+    this.scrollTo(scroll);
+  }
+
+  scrollTo(scroll, animate = true, duration = 200) {
     const now = GLib.get_monotonic_time();
 
     const adjustment = this.vadjustment;
     const anim = this._scrollAnim;
 
+    // Only scroll if the clamped distance is greater than zero to prevent
+    // rapidly retriggering the animation while holding down a key
     const min = adjustment.lower;
     const max = adjustment.upper - adjustment.page_size;
 
-    this._scroll = Math.clamp(value, min, max);
+    const scrollClamped = Math.clamp(scroll, min, max);
+    const distance = Math.abs(this.scroll - scrollClamped);
+
+    if (distance === 0) {
+      return Clutter.EVENT_STOP;
+    }
+
+    this._scroll = scrollClamped;
 
     if (animate) {
       // Init scroll animation
@@ -463,6 +482,12 @@ class VerticalScrollView extends St.ScrollView {
     }
 
     return this.scrollTo(clampedScroll, animate, duration);
+  }
+
+  destroy() {
+    if (this._scrollAnim.lock) {
+      global.stage.disconnect(this._scrollAnim.lock);
+    }
   }
 
   get scroll() {
