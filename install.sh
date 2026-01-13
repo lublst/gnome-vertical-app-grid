@@ -6,18 +6,27 @@ for arg in "$@"; do
     [ "$arg" = "--bundle" ] && BUNDLE=1
 done
 
-NAME=vertical-app-grid
-DOMAIN=lublst.github.io
-ZIP_NAME=$NAME@$DOMAIN.zip
+NAME="vertical-app-grid"
+DOMAIN="lublst.github.io"
+ZIP_NAME="$NAME@$DOMAIN.zip"
 
-echo -e ":: Creating extension bundle..."
+echo ":: Compiling translations..."
 cd src
-zip -qr "$ZIP_NAME" *
 
-if [ $BUNDLE -eq 1 ]; then
+for po in po/*.po; do
+    lang="$(basename "${po%.po}")"
+
+    mkdir -p "locale/$lang/LC_MESSAGES"
+    msgfmt -o "locale/$lang/LC_MESSAGES/$NAME@$DOMAIN.mo" "$po"
+done
+
+echo ":: Creating extension bundle..."
+zip -qr "$ZIP_NAME" . -x "po/*"
+
+if [ "$BUNDLE" -eq 1 ]; then
     mv "$ZIP_NAME" ..
 else
-    echo -e ":: Installing extension..."
+    echo ":: Installing extension..."
     gnome-extensions install -f "$ZIP_NAME"
     rm "$ZIP_NAME"
 fi

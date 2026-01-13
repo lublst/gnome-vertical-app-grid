@@ -1,5 +1,6 @@
 {
   "description": "Turns the default horizontal app grid into a vertical one",
+  "gettext-domain": "vertical-app-grid@lublst.github.io",
   "name": "Vertical App Grid",
   "settings-schema": "org.gnome.shell.extensions.vertical-app-grid",
   "shell-version": [
@@ -8,5 +9,5 @@
   ],
   "url": "https://github.com/lublst/gnome-vertical-app-grid",
   "uuid": "vertical-app-grid@lublst.github.io",
-  "version": 4
+  "version": 5
 }

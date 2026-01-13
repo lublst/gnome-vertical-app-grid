@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<interface>
+<interface domain="vertical-app-grid@lublst.github.io">
   <requires lib="gtk" version="4.0"/>
   <requires lib="adwaita" version="1.0"/>
 
@@ -31,7 +31,7 @@
             <property name="model">
               <object class="GtkStringList">
                 <items>
-                  <item translatable="yes">As In Dash</item>
+                  <item translatable="yes">As in Dash</item>
                   <item translatable="yes">Most Used</item>
                   <item translatable="yes">Alphabetical</item>
                 </items>
