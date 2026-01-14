@@ -1,0 +1,57 @@
+msgid ""
+msgstr ""
+"Language: ru\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+msgid "Favorites"
+msgstr "Избранное"
+
+msgid "All Apps"
+msgstr "Все приложения"
+
+msgid "Add to Favorites"
+msgstr "Добавить в «Избранное»"
+
+msgid "Remove from Favorites"
+msgstr "Удалить из «Избранного»"
+
+msgid "Preferences"
+msgstr "Настройки"
+
+msgid "App Grid"
+msgstr "Настройка разделов"
+
+msgid "App Sorting"
+msgstr "Сортировка приложений"
+
+msgid "Favorites Sorting"
+msgstr "Сортировка «Избранного»"
+
+msgid "Most Used"
+msgstr "По популярности"
+
+msgid "Alphabetical"
+msgstr "По алфавиту"
+
+msgid "As in Dash"
+msgstr "Как в Доке"
+
+msgid "Show Favorites Section"
+msgstr "Показывать раздел «Избранное»"
+
+msgid "Smooth Scrolling"
+msgstr "Плавная прокрутка"
+
+msgid "Customization"
+msgstr "Настройка вида"
+
+msgid "Columns"
+msgstr "Количество столбцов"
+
+msgid "Icon Size"
+msgstr "Размер иконок"
+
+msgid "Icon Spacing"
+msgstr "Расстояние между иконками"
