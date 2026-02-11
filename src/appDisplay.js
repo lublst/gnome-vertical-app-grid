@@ -387,11 +387,11 @@ class VerticalScrollView extends St.ScrollView {
       // Init scroll animation
       anim.startTime = now;
       anim.startValue = adjustment.value;
-      anim.duration = duration * 1000;
       anim.delta = this.scroll - adjustment.value;
 
       if (anim.lock === null) {
         anim.lock = global.stage.connect('after-paint', this._scrollAnimationFrame.bind(this));
+        anim.duration = duration * 1000;
       }
     } else {
       // Cancel running animation
