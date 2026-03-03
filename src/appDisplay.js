@@ -112,10 +112,11 @@ class VerticalAppDisplay extends St.Widget {
     this._appIcons = this._loadApps().map(appId => {
       const app = this._appSystem.lookup_app(appId);
       const appIcon = new AppDisplay.AppIcon(app, { isDraggable: false })
+      const isFav = this._appFavorites.isFavorite(appId);
 
       appIcon.icon.setIconSize(iconSize);
 
-      if (favSection && this._appFavorites.isFavorite(appId)) {
+      if (favSection && isFav) {
         this._favoritesView.add_child(appIcon);
       } else {
         this._mainView.add_child(appIcon);
@@ -141,15 +142,19 @@ class VerticalAppDisplay extends St.Widget {
     const apps = [];
 
     // Filter out hidden apps and split off favorites
+    const favSection = this._settings.get_boolean('favorites-section');
+
     installedApps.forEach(appInfo => { try {
       const appId = appInfo.get_id();
       const isFav = this._appFavorites.isFavorite(appId);
 
-      if (this._parentalControls.shouldShowApp(appInfo)) { if (isFav) {
-        favs.push(appInfo);
-      } else {
-        apps.push(appInfo);
-      } }
+      if (this._parentalControls.shouldShowApp(appInfo)) {
+        if (favSection && isFav) {
+          favs.push(appInfo);
+        } else {
+          apps.push(appInfo);
+        }
+      }
     } catch { } });
 
     // Sort favorites
