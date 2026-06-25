@@ -50,6 +50,36 @@
             <property name="title" translatable="yes">Show Favorites Section</property>
           </object>
         </child>
+
+        <child>
+          <object class="AdwSwitchRow" id="show-favorites-in-app-grid">
+            <property name="title" translatable="yes">Show favorites in app grid</property>
+            <property name="subtitle" translatable="yes">When enabled, applications pinned to favorites will appear in the apps grid</property>
+          </object>
+        </child>
+
+        <child>
+          <object class="AdwSwitchRow" id="category-grouping">
+            <property name="title" translatable="yes">Group by Category</property>
+          </object>
+        </child>
+
+        <child>
+          <object class="AdwActionRow" id="edit-categories">
+            <property name="title" translatable="yes">Edit Categories Profile</property>
+            <property name="subtitle" translatable="yes">Open the categories configuration file</property>
+            <property name="activatable-widget">edit-categories-btn</property>
+            <child>
+              <object class="GtkButton" id="edit-categories-btn">
+                <property name="valign">center</property>
+                <property name="icon-name">document-edit-symbolic</property>
+                <style>
+                  <class name="flat"/>
+                </style>
+              </object>
+            </child>
+          </object>
+        </child>
       </object>
     </child>
 

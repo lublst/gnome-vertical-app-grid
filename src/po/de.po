@@ -55,3 +55,61 @@ msgstr "Symbolgröße"
 
 msgid "Icon Spacing"
 msgstr "Symbolabstand"
+
+
+msgid "Show favorites in app grid"
+msgstr "Show favorites in app grid"
+
+msgid "When enabled, applications pinned to favorites will appear in the apps grid"
+msgstr "When enabled, applications pinned to favorites will appear in the apps grid"
+
+msgid "Group by Category"
+msgstr "Group by Category"
+
+msgid "Edit Categories Profile"
+msgstr "Edit Categories Profile"
+
+msgid "Open the categories configuration file"
+msgstr "Open the categories configuration file"
+
+msgid "Development"
+msgstr "Development"
+
+msgid "Office"
+msgstr "Office"
+
+msgid "Network"
+msgstr "Network"
+
+msgid "AudioVideo"
+msgstr "AudioVideo"
+
+msgid "Audio"
+msgstr "Audio"
+
+msgid "Video"
+msgstr "Video"
+
+msgid "Graphics"
+msgstr "Graphics"
+
+msgid "Education"
+msgstr "Education"
+
+msgid "Game"
+msgstr "Game"
+
+msgid "Utility"
+msgstr "Utility"
+
+msgid "Accessories"
+msgstr "Accessories"
+
+msgid "System"
+msgstr "System"
+
+msgid "Settings"
+msgstr "Settings"
+
+msgid "Other"
+msgstr "Other"

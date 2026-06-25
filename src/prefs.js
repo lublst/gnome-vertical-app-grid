@@ -17,6 +17,8 @@ export default class EssentialTweaksPreferences extends ExtensionPreferences {
       ['animate-scroll', 'active'],
       ['columns', 'value'],
       ['favorites-section', 'active'],
+      ['show-favorites-in-app-grid', 'active'],
+      ['category-grouping', 'active'],
       ['icon-size', 'value'],
       ['icon-spacing', 'value']
     ];
@@ -27,6 +29,25 @@ export default class EssentialTweaksPreferences extends ExtensionPreferences {
 
     this._bindComboRow(builder, settings, 'app-sorting', ['usage', 'alphabetical']);
     this._bindComboRow(builder, settings, 'favorites-sorting', ['dash', 'usage', 'alphabetical']);
+
+    const editCategoriesBtn = builder.get_object('edit-categories-btn');
+    editCategoriesBtn.connect('clicked', () => {
+      console.log('Editing categories profile...');
+      console.log(`File path: ${this.path}/categories.js`);
+
+      const filePath = Gio.File.new_for_path(`${this.path}/categories.js`);
+      const uri = filePath.get_uri();
+
+      console.log(`URI: ${uri}`);
+
+      Gio.AppInfo.launch_default_for_uri_async(uri, null, null, null, (result, error) => {
+        if (error) {
+          console.error(`Failed to open file: ${error.message}`);
+        } else {
+          console.log('File opened successfully');
+        }
+      });
+    });
   }
 
   _bindComboRow(builder, settings, key, values) {

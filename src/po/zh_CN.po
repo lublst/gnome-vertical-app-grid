@@ -1,0 +1,115 @@
+msgid ""
+msgstr ""
+"Language: zh_CN\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+msgid "Favorites"
+msgstr "收藏夹"
+
+msgid "All Apps"
+msgstr "所有应用"
+
+msgid "Add to Favorites"
+msgstr "收藏"
+
+msgid "Remove from Favorites"
+msgstr "移除"
+
+msgid "Preferences"
+msgstr "首选项"
+
+msgid "App Grid"
+msgstr "应用网格"
+
+msgid "App Sorting"
+msgstr "应用排序"
+
+msgid "Favorites Sorting"
+msgstr "收藏夹排序"
+
+msgid "Most Used"
+msgstr "最常用"
+
+msgid "Alphabetical"
+msgstr "按字母顺序"
+
+msgid "As in Dash"
+msgstr "与 Dash 一致"
+
+msgid "Show Favorites Section"
+msgstr "显示收藏夹区域"
+
+msgid "Show favorites in app grid"
+msgstr "复制到收藏夹"
+
+msgid "When enabled, applications pinned to favorites will appear in the apps grid"
+msgstr "启用后，固定到收藏夹的应用程序将出现在应用程序网格中"
+
+
+msgid "Group by Category"
+msgstr "按类型分组"
+
+msgid "Edit Categories Profile"
+msgstr "编辑分组配置"
+
+msgid "Open the categories configuration file"
+msgstr "打开分组配置文件"
+
+msgid "Smooth Scrolling"
+msgstr "平滑滚动"
+
+msgid "Customization"
+msgstr "自定义"
+
+msgid "Columns"
+msgstr "列数"
+
+msgid "Icon Size"
+msgstr "图标大小"
+
+msgid "Icon Spacing"
+msgstr "图标间距"
+
+msgid "Development"
+msgstr "开发工具"
+
+msgid "Office"
+msgstr "办公软件"
+
+msgid "Network"
+msgstr "网络工具"
+
+msgid "AudioVideo"
+msgstr "多媒体"
+
+msgid "Audio"
+msgstr "音频"
+
+msgid "Video"
+msgstr "视频"
+
+msgid "Graphics"
+msgstr "图像图形"
+
+msgid "Education"
+msgstr "教育软件"
+
+msgid "Game"
+msgstr "游戏"
+
+msgid "Utility"
+msgstr "小工具"
+
+msgid "Accessories"
+msgstr "附件"
+
+msgid "System"
+msgstr "系统工具"
+
+msgid "Settings"
+msgstr "系统设置"
+
+msgid "Other"
+msgstr "其他"

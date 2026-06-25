@@ -13,6 +13,8 @@ import * as ParentalControlsManager from 'resource:///org/gnome/shell/misc/paren
 import { gettext as _ } from 'resource:///org/gnome/shell/extensions/extension.js';
 import { SIDE_CONTROLS_ANIMATION_TIME } from 'resource:///org/gnome/shell/ui/overviewControls.js';
 
+import { CATEGORY_ORDER, getAppCategory } from './categories.js';
+
 function easeOutCubic(t) {
   return (--t) * t * t + 1;
 }
@@ -94,6 +96,8 @@ class VerticalAppDisplay extends St.Widget {
         case 'app-sorting':
         case 'favorites-section':
         case 'favorites-sorting':
+        case 'category-grouping':
+        case 'show-favorites-in-app-grid':
           return this._redisplay();
 
         case 'icon-spacing':
@@ -108,31 +112,270 @@ class VerticalAppDisplay extends St.Widget {
   _addAppIcons() {
     const iconSize = this._settings.get_int('icon-size');
     const favSection = this._settings.get_boolean('favorites-section');
+    const categoryGrouping = this._settings.get_boolean('category-grouping');
 
-    this._appIcons = this._loadApps().map(appId => {
-      const app = this._appSystem.lookup_app(appId);
-      const appIcon = new AppDisplay.AppIcon(app, { isDraggable: false })
-      const isFav = this._appFavorites.isFavorite(appId);
+    this._appIcons = [];
+    this._categoryLabels = {};
+    this._categoryViews = {};
 
-      appIcon.icon.setIconSize(iconSize);
+    if (categoryGrouping) {
+      // Category grouping mode - hide original mainLabel/mainView
+      this._mainLabel.hide();
+      this._mainView.hide();
+      this._favoritesLabel.hide();
+      this._favoritesView.hide();
 
-      if (favSection && isFav) {
-        this._favoritesView.add_child(appIcon);
-      } else {
-        this._mainView.add_child(appIcon);
+      const appsByCategory = this._loadAppsByCategory();
+
+      // First, add favorites section if enabled
+      if (favSection && appsByCategory._favorites.length > 0) {
+        const favLabel = new St.Label({
+          style_class: 'search-statustext',
+          text: _('Favorites')
+        });
+        const favView = new St.Viewport({
+          layout_manager: new VerticalLayout(this._settings)
+        });
+
+        this._categoryLabels['_favorites'] = favLabel;
+        this._categoryViews['_favorites'] = favView;
+
+        // Insert at the beginning to ensure favorites is always on top
+        this._scrollView.get_child().insert_child_at_index(favLabel, 0);
+        this._scrollView.get_child().insert_child_at_index(favView, 1);
+
+        for (const appId of appsByCategory._favorites) {
+          const app = this._appSystem.lookup_app(appId);
+          if (!app) continue;
+          const appIcon = new AppDisplay.AppIcon(app, { isDraggable: false });
+          appIcon.icon.setIconSize(iconSize);
+          favView.add_child(appIcon);
+          this._appIcons.push(appIcon);
+        }
       }
 
-      return appIcon;
+      // Then add category sections
+      for (const category of CATEGORY_ORDER) {
+        const appIds = appsByCategory[category];
+        if (!appIds || appIds.length === 0) continue;
+
+        const label = new St.Label({
+          style_class: 'search-statustext',
+          text: _(category)
+        });
+        const view = new St.Viewport({
+          layout_manager: new VerticalLayout(this._settings)
+        });
+
+        this._categoryLabels[category] = label;
+        this._categoryViews[category] = view;
+
+        this._scrollView.add_child(label);
+        this._scrollView.add_child(view);
+
+        for (const appId of appIds) {
+          const app = this._appSystem.lookup_app(appId);
+          if (!app) continue;
+          const appIcon = new AppDisplay.AppIcon(app, { isDraggable: false });
+          appIcon.icon.setIconSize(iconSize);
+          view.add_child(appIcon);
+          this._appIcons.push(appIcon);
+        }
+      }
+
+      // Add Other category if it has apps
+      if (appsByCategory['Other'] && appsByCategory['Other'].length > 0) {
+        const label = new St.Label({
+          style_class: 'search-statustext',
+          text: _('Other')
+        });
+        const view = new St.Viewport({
+          layout_manager: new VerticalLayout(this._settings)
+        });
+
+        this._categoryLabels['Other'] = label;
+        this._categoryViews['Other'] = view;
+
+        this._scrollView.add_child(label);
+        this._scrollView.add_child(view);
+
+        for (const appId of appsByCategory['Other']) {
+          const app = this._appSystem.lookup_app(appId);
+          if (!app) continue;
+          const appIcon = new AppDisplay.AppIcon(app, { isDraggable: false });
+          appIcon.icon.setIconSize(iconSize);
+          view.add_child(appIcon);
+          this._appIcons.push(appIcon);
+        }
+      }
+    } else {
+      // Original mode: Favorites and All Apps
+      // Show original labels and views
+      this._favoritesLabel.show();
+      this._favoritesView.show();
+      this._mainLabel.show();
+      this._mainView.show();
+
+      // Ensure favorites is at the top by reordering
+      const scrollBox = this._scrollView.get_child();
+      const favLabelIndex = scrollBox.get_children().indexOf(this._favoritesLabel);
+      const favViewIndex = scrollBox.get_children().indexOf(this._favoritesView);
+
+      if (favLabelIndex !== 0) {
+        scrollBox.set_child_at_index(this._favoritesLabel, 0);
+        scrollBox.set_child_at_index(this._favoritesView, 1);
+      }
+
+      const syncFavorites = this._settings.get_boolean('show-favorites-in-app-grid');
+      const installedApps = this._appSystem.get_installed();
+      const favSorting = this._settings.get_string('favorites-sorting');
+      const appSorting = this._settings.get_string('app-sorting');
+      const favIds = this._appFavorites._getIds();
+
+      const favAppInfos = [];
+      const mainAppInfos = [];
+
+      installedApps.forEach(appInfo => {
+        try {
+          if (!this._parentalControls.shouldShowApp(appInfo))
+            return;
+
+          const appId = appInfo.get_id();
+          const isFav = this._appFavorites.isFavorite(appId);
+
+          if (favSection && isFav) {
+            favAppInfos.push(appInfo);
+            if (!syncFavorites) return;
+          }
+
+          mainAppInfos.push(appInfo);
+        } catch { }
+      });
+
+      // Sort favorites
+      favAppInfos.sort((a, b) => {
+        switch (favSorting) {
+          case 'dash':
+            return favIds.indexOf(a.get_id()) - favIds.indexOf(b.get_id());
+          case 'usage':
+            return this._appUsage.compare(a.get_id(), b.get_id()) ?? 0;
+          case 'alphabetical': default:
+            return a.get_name().toLowerCase().localeCompare(b.get_name().toLowerCase());
+        }
+      });
+
+      // Sort main apps
+      mainAppInfos.sort((a, b) => {
+        switch (appSorting) {
+          case 'usage':
+            return this._appUsage.compare(a.get_id(), b.get_id()) ?? 0;
+          case 'alphabetical': default:
+            return a.get_name().toLowerCase().localeCompare(b.get_name().toLowerCase());
+        }
+      });
+
+      // Add favorites
+      for (const appInfo of favAppInfos) {
+        const app = this._appSystem.lookup_app(appInfo.get_id());
+        if (!app) continue;
+        const appIcon = new AppDisplay.AppIcon(app, { isDraggable: false });
+        appIcon.icon.setIconSize(iconSize);
+        this._favoritesView.add_child(appIcon);
+        this._appIcons.push(appIcon);
+      }
+
+      // Add main apps
+      for (const appInfo of mainAppInfos) {
+        const app = this._appSystem.lookup_app(appInfo.get_id());
+        if (!app) continue;
+        const appIcon = new AppDisplay.AppIcon(app, { isDraggable: false });
+        appIcon.icon.setIconSize(iconSize);
+        this._mainView.add_child(appIcon);
+        this._appIcons.push(appIcon);
+      }
+
+      const showFavSection = this._favoritesView.get_children().length > 0;
+      const showMainSection = this._mainView.get_children().length > 0;
+      const showMainLabel = showFavSection && showMainSection;
+
+      this._favoritesLabel.visible = showFavSection;
+      this._favoritesView.visible = showFavSection;
+      this._mainLabel.visible = showMainLabel;
+      this._mainView.visible = showMainSection;
+    }
+  }
+
+  _loadAppsByCategory() {
+    const installedApps = this._appSystem.get_installed();
+    const favSection = this._settings.get_boolean('favorites-section');
+    const syncFavorites = this._settings.get_boolean('show-favorites-in-app-grid');
+
+    const appsByCategory = {};
+    for (const cat of CATEGORY_ORDER) {
+      appsByCategory[cat] = [];
+    }
+    appsByCategory['Other'] = [];
+    appsByCategory['_favorites'] = [];
+
+    installedApps.forEach(appInfo => {
+      try {
+        const appId = appInfo.get_id();
+
+        if (!this._parentalControls.shouldShowApp(appInfo))
+          return;
+
+        const isFav = this._appFavorites.isFavorite(appId);
+
+        // Add to favorites section if enabled
+        if (favSection && isFav) {
+          appsByCategory['_favorites'].push(appInfo);
+          // If show-favorites-in-app-grid is enabled, also add to category (don't return)
+          if (!syncFavorites) return;
+        }
+
+        const category = getAppCategory(appInfo);
+        appsByCategory[category].push(appInfo);
+      } catch { }
     });
 
-    const showFavSection = this._favoritesView.get_children().length > 0;
-    const showMainSection = this._mainView.get_children().length > 0;
-    const showMainLabel = showFavSection && showMainSection;
+    // Sort apps within each category
+    const appSorting = this._settings.get_string('app-sorting');
 
-    this._favoritesLabel.visible = showFavSection;
-    this._favoritesView.visible = showFavSection;
-    this._mainLabel.visible = showMainLabel;
-    this._mainView.visible = showMainSection;
+    for (const category in appsByCategory) {
+      if (category === '_favorites') continue;
+
+      appsByCategory[category].sort((a, b) => {
+        switch (appSorting) {
+          case 'usage':
+            return this._appUsage.compare(a.get_id(), b.get_id()) ?? 0;
+          case 'alphabetical': default:
+            return a.get_name().toLowerCase().localeCompare(b.get_name().toLowerCase());
+        }
+      });
+
+      appsByCategory[category] = appsByCategory[category].map(appInfo => appInfo.get_id());
+    }
+
+    // Sort favorites
+    if (appsByCategory['_favorites'].length > 0) {
+      const favSorting = this._settings.get_string('favorites-sorting');
+      const favIds = this._appFavorites._getIds();
+
+      appsByCategory['_favorites'].sort((a, b) => {
+        switch (favSorting) {
+          case 'dash':
+            return favIds.indexOf(a.get_id()) - favIds.indexOf(b.get_id());
+          case 'usage':
+            return this._appUsage.compare(a.get_id(), b.get_id()) ?? 0;
+          case 'alphabetical': default:
+            return a.get_name().toLowerCase().localeCompare(b.get_name().toLowerCase());
+        }
+      });
+
+      appsByCategory['_favorites'] = appsByCategory['_favorites'].map(appInfo => appInfo.get_id());
+    }
+
+    return appsByCategory;
   }
 
   _loadApps() {
@@ -196,6 +439,22 @@ class VerticalAppDisplay extends St.Widget {
         this._favoritesView.destroy_all_children();
         this._mainView.destroy_all_children();
 
+        // Clean up category views if they exist
+        for (const category in this._categoryLabels) {
+          if (this._categoryLabels[category]) {
+            this._categoryLabels[category].destroy();
+            this._categoryLabels[category] = null;
+          }
+        }
+        for (const category in this._categoryViews) {
+          if (this._categoryViews[category]) {
+            this._categoryViews[category].destroy();
+            this._categoryViews[category] = null;
+          }
+        }
+        this._categoryLabels = {};
+        this._categoryViews = {};
+
         this._addAppIcons();
         this._animateRedisplay();
       });
@@ -214,8 +473,25 @@ class VerticalAppDisplay extends St.Widget {
   _updateLabelMargins() {
     const spacing = this._settings.get_int('icon-spacing');
 
-    this._favoritesLabel.set_style(`margin: 0 0 ${spacing}px 0;`);
-    this._mainLabel.set_style(`margin: ${spacing * 2}px 0 ${spacing}px 0;`);
+    // Original favorites label (non-category mode)
+    if (this._favoritesLabel && this._favoritesLabel.visible) {
+      this._favoritesLabel.set_style(`margin: 0 0 ${spacing}px 0;`);
+    }
+    // Original main label (non-category mode)
+    if (this._mainLabel && this._mainLabel.visible) {
+      this._mainLabel.set_style(`margin: ${spacing * 2}px 0 ${spacing}px 0;`);
+    }
+
+    // Category labels (including _favorites in category mode)
+    for (const category in this._categoryLabels) {
+      if (this._categoryLabels[category] && this._categoryLabels[category].visible) {
+        if (category === '_favorites') {
+          this._categoryLabels[category].set_style(`margin: 0 0 ${spacing}px 0;`);
+        } else {
+          this._categoryLabels[category].set_style(`margin: ${spacing * 2}px 0 ${spacing}px 0;`);
+        }
+      }
+    }
   }
 
   _updateIconSize() {
