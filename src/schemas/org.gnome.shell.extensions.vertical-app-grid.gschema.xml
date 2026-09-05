@@ -18,6 +18,10 @@
       <default>true</default>
     </key>
 
+    <key name="hide-labels" type="b">
+      <default>false</default>
+    </key>
+
     <key name="favorites-sorting" type="s">
       <default>'dash'</default>
     </key>
