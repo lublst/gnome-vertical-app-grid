@@ -50,6 +50,13 @@
             <property name="title" translatable="yes">Show Favorites Section</property>
           </object>
         </child>
+
+        <child>
+          <object class="AdwSwitchRow" id="hide-labels">
+            <property name="title" translatable="yes">Hide app labels</property>
+          </object>
+        </child>
+
       </object>
     </child>
 
