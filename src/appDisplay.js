@@ -305,6 +305,16 @@ class VerticalAppDisplay extends St.Widget {
       AppFavorites.getAppFavorites().disconnectObject(icon);
       icon.view._appFavorites = { isFavorite: appId => this.isPinned(appId) };
 
+      // Replaces the GNOME-internal listener just disconnected above, so a
+      // rename (or any other settings change) made through paths other than
+      // our own — e.g. the pencil-icon rename inside the folder's own open
+      // popup — still refreshes the closed icon on the main screen, the same
+      // way our own promptRenameFolder() already does explicitly.
+      icon._folder.connectObject('changed', () => {
+        this._syncFolderIcon(id);
+        this._redisplay();
+      }, this);
+
       icon.connect('apps-changed', () => this._redisplay());
       icon.connect('destroy', () => this._folderIconCache.delete(id));
 
