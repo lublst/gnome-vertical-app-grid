@@ -1,14 +1,13 @@
 {
-  "description": "Turns the default horizontal app grid into a vertical one",
-  "gettext-domain": "vertical-app-grid@lublst.github.io",
-  "name": "Vertical App Grid",
-  "settings-schema": "org.gnome.shell.extensions.vertical-app-grid",
+  "description": "A heavily customized vertical app drawer: folders, app hiding, drag-and-drop reordering, and touchscreen support, on top of a vertical (rather than horizontal/paged) layout.",
+  "gettext-domain": "vertical-app-grid-max@local",
+  "name": "App Drawer",
+  "settings-schema": "org.gnome.shell.extensions.vertical-app-grid-max",
   "shell-version": [
     "48",
     "49",
     "50"
   ],
-  "url": "https://github.com/lublst/gnome-vertical-app-grid",
-  "uuid": "vertical-app-grid@lublst.github.io",
-  "version": 7
+  "uuid": "vertical-app-grid-max@local",
+  "version": 1
 }

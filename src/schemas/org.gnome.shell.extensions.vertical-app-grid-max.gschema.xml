@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <schema id="org.gnome.shell.extensions.vertical-app-grid-max" path="/org/gnome/shell/extensions/vertical-app-grid-max/">
+
+    <key name="animate-scroll" type="b">
+      <default>true</default>
+    </key>
+
+    <key name="app-sorting" type="s">
+      <default>'custom'</default>
+    </key>
+
+    <key name="columns" type="i">
+      <default>6</default>
+    </key>
+
+    <key name="pinned-sorting" type="s">
+      <default>'custom'</default>
+    </key>
+
+    <key name="pinned-apps" type="as">
+      <default>[]</default>
+    </key>
+
+    <key name="pinned-order" type="s">
+      <default>'[]'</default>
+    </key>
+
+    <key name="folders-section" type="b">
+      <default>true</default>
+    </key>
+
+    <key name="folders-order" type="s">
+      <default>'[]'</default>
+    </key>
+
+    <key name="hidden-apps" type="as">
+      <default>[]</default>
+    </key>
+
+    <key name="custom-order" type="s">
+      <default>'[]'</default>
+    </key>
+
+    <key name="icon-size" type="i">
+      <default>64</default>
+    </key>
+
+    <key name="icon-spacing" type="i">
+      <default>24</default>
+    </key>
+
+  </schema>
+</schemalist>
