@@ -41,6 +41,9 @@ msgstr "Wie im Dash"
 msgid "Show Favorites Section"
 msgstr "Favoriten anzeigen"
 
+msgid "Show App Labels"
+msgstr "Anwendungsnamen anzeigen"
+
 msgid "Smooth Scrolling"
 msgstr "Flüssiges Scrollen"
 

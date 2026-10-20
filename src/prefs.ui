@@ -45,6 +45,7 @@
 
     <child>
       <object class="AdwPreferencesGroup">
+
         <child>
           <object class="AdwSwitchRow" id="favorites-section">
             <property name="title" translatable="yes">Show Favorites Section</property>
@@ -52,8 +53,8 @@
         </child>
 
         <child>
-          <object class="AdwSwitchRow" id="hide-labels">
-            <property name="title" translatable="yes">Hide app labels</property>
+          <object class="AdwSwitchRow" id="show-labels">
+            <property name="title" translatable="yes">Show App Labels</property>
           </object>
         </child>
 
