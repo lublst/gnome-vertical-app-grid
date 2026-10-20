@@ -93,6 +93,7 @@ class VerticalAppDisplay extends St.Widget {
       switch (key) {
         case 'app-sorting':
         case 'favorites-section':
+        case 'hide-labels':
         case 'favorites-sorting':
           return this._redisplay();
 
@@ -108,10 +109,11 @@ class VerticalAppDisplay extends St.Widget {
   _addAppIcons() {
     const iconSize = this._settings.get_int('icon-size');
     const favSection = this._settings.get_boolean('favorites-section');
+    const hideLabels = this._settings.get_boolean('hide-labels');
 
     this._appIcons = this._loadApps().map(appId => {
       const app = this._appSystem.lookup_app(appId);
-      const appIcon = new AppDisplay.AppIcon(app, { isDraggable: false })
+      const appIcon = new AppDisplay.AppIcon(app, { isDraggable: false, showLabel: !hideLabels })
       const isFav = this._appFavorites.isFavorite(appId);
 
       appIcon.icon.setIconSize(iconSize);
