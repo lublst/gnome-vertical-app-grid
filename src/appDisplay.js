@@ -340,7 +340,7 @@ class VerticalScrollView extends St.ScrollView {
       y_align: Clutter.ActorAlign.CENTER,
       x_expand: false,
       y_expand: false,
-      vertical: true
+      orientation: Clutter.Orientation.VERTICAL
     });
 
     this.set_child(this._scrollBox);
