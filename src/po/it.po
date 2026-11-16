@@ -1,0 +1,93 @@
+msgid ""
+msgstr ""
+"Language: it\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+msgid "Favorites"
+msgstr "Preferiti"
+
+msgid "Folders"
+msgstr "Cartelle"
+
+msgid "New Folder"
+msgstr "Nuova cartella"
+
+msgid "Move to Folder"
+msgstr "Sposta nella cartella"
+
+msgid "Remove from Folder"
+msgstr "Togli dalla cartella"
+
+msgid "All Apps"
+msgstr "Tutte le app"
+
+msgid "Add to Favorites"
+msgstr "Aggiungi ai preferiti"
+
+msgid "Remove from Favorites"
+msgstr "Rimuovi dai preferiti"
+
+msgid "Web"
+msgstr "Web"
+
+msgid "System"
+msgstr "Sistema"
+
+msgid "Preferences"
+msgstr "Preferenze"
+
+msgid "App Grid"
+msgstr "Griglia delle app"
+
+msgid "App Sorting"
+msgstr "Ordinamento app"
+
+msgid "Favorites Sorting"
+msgstr "Ordinamento preferiti"
+
+msgid "Most Used"
+msgstr "Più usate"
+
+msgid "Alphabetical"
+msgstr "Alfabetico"
+
+msgid "As in Dash"
+msgstr "Come nella dash"
+
+msgid "Show Favorites Section"
+msgstr "Mostra la sezione Preferiti"
+
+msgid "Show Folders Section"
+msgstr "Mostra la sezione Cartelle"
+
+msgid "Mark Duplicate Apps"
+msgstr "Segnala le app doppie"
+
+msgid "Highlight apps that share their name with another app"
+msgstr "Evidenzia in arancione le app che hanno lo stesso nome di un'altra"
+
+msgid "Show Installation Type"
+msgstr "Mostra come sono installate"
+
+msgid "Show on every app whether it is a system package, Flatpak, Snap, AppImage or web app"
+msgstr "Mostra su ogni app se è un pacchetto di sistema, Flatpak, Snap, AppImage o una web app"
+
+msgid "Show App Labels"
+msgstr "Mostra i nomi delle app"
+
+msgid "Smooth Scrolling"
+msgstr "Scorrimento fluido"
+
+msgid "Customization"
+msgstr "Personalizzazione"
+
+msgid "Columns"
+msgstr "Colonne"
+
+msgid "Icon Size"
+msgstr "Dimensione icone"
+
+msgid "Icon Spacing"
+msgstr "Spaziatura icone"
