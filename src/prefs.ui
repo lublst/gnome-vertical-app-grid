@@ -53,6 +53,26 @@
         </child>
 
         <child>
+          <object class="AdwSwitchRow" id="folders-section">
+            <property name="title" translatable="yes">Show Folders Section</property>
+          </object>
+        </child>
+
+        <child>
+          <object class="AdwSwitchRow" id="duplicate-badges">
+            <property name="title" translatable="yes">Mark Duplicate Apps</property>
+            <property name="subtitle" translatable="yes">Highlight apps that share their name with another app</property>
+          </object>
+        </child>
+
+        <child>
+          <object class="AdwSwitchRow" id="source-badges">
+            <property name="title" translatable="yes">Show Installation Type</property>
+            <property name="subtitle" translatable="yes">Show on every app whether it is a system package, Flatpak, Snap, AppImage or web app</property>
+          </object>
+        </child>
+
+        <child>
           <object class="AdwSwitchRow" id="show-labels">
             <property name="title" translatable="yes">Show App Labels</property>
           </object>
